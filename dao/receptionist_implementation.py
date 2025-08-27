@@ -216,3 +216,30 @@ class ReceptionistDaoImplementation(ReceptionistBase):
         max_id = max(numeric_ids) if numeric_ids else 999  # Safety check
         new_id = max_id + 1
         return f"APT{new_id:04d}"
+    
+    def get_appointment_with_fee(self, appointment_id: str) -> Optional[Dict]:
+        """Get appointment details with consultation fee"""
+        cursor = None
+        try:
+            cursor = self.conn.cursor(pymysql.cursors.DictCursor)
+            
+            query = """
+            SELECT a.appointment_id, a.patient_id, a.doctor_id, a.token, 
+                a.status, a.appointment_date, d.consultation_fee
+            FROM appointments a
+            JOIN doctors d ON a.doctor_id = d.doctor_id
+            WHERE a.appointment_id = %s
+            """
+            
+            cursor.execute(query, (appointment_id,))
+            result = cursor.fetchone()
+            
+            return result
+            
+        except Exception as e:
+            print(f"Error fetching appointment with fee: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+

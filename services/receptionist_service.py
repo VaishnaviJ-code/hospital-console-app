@@ -315,6 +315,13 @@ class ReceptionistService:
         try:
             appointment_id = self.receptionist_dao.book_appointment(appointment_data)
             if appointment_id and appointment_id != -1 and isinstance(appointment_id, str) and appointment_id.startswith("APT"):
+                
+                appointment_details = self.receptionist_dao.get_appointment_with_fee(appointment_id)
+                
+                if appointment_details:
+                    # Display appointment confirmation with fee
+                    self._display_appointment_confirmation(appointment_details)
+                
                 return {
                     "success": True,
                     "message": "Appointment scheduled successfully",
@@ -590,3 +597,20 @@ class ReceptionistService:
             "appointment_count": appointments_result["count"],
             "errors": []
         }
+    
+    def _display_appointment_confirmation(self, appointment_details: Dict):
+        """Display appointment confirmation with consultation fee"""
+        print("\n" + "=" * 50)
+        print("APPOINTMENT CONFIRMATION".center(50))
+        print("=" * 50)
+        print(f"Appointment ID    : {appointment_details['appointment_id']}")
+        print(f"Patient ID        : {appointment_details['patient_id']}")
+        print(f"Doctor ID         : {appointment_details['doctor_id']}")
+        print(f"Token Number      : {appointment_details['token']}")
+        print(f"Status            : {appointment_details['status']}")
+        print(f"Appointment Date  : {appointment_details['appointment_date']}")
+        print(f"Consultation Fee  : ₹{appointment_details['consultation_fee']:.2f}")
+        print("=" * 50)
+        print("Please make note of your token number and appointment ID.")
+        print("=" * 50)
+

@@ -46,17 +46,26 @@ def add_patient():
 def create_appointment():
     print("Create a new appointment:")
     patient_id = input("Patient ID: ").strip()
-    doctor_id = input("Doctor ID (number): ").strip()
+    doctor_id = input("Doctor ID: ").strip()  
     token = input("Token (number): ").strip()
     status = input("Status (default Scheduled): ").strip() or "Scheduled"
     date_str = input("Appointment Date (YYYY-MM-DD HH:MM): ").strip()
 
     try:
-        doctor_id = doctor_id
         token = int(token)
-        appointment_date = datetime.strptime(date_str, "%Y-%m-%d")
-    except:
-        print("Invalid input values.")
+        try:
+            appointment_date = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
+        except ValueError:
+            # If time not provided, try date only and default to 09:00
+            try:
+                appointment_date = datetime.strptime(date_str, "%Y-%m-%d")
+                appointment_date = appointment_date.replace(hour=9, minute=0)  
+                print("Time not specified, defaulting to 09:00")
+            except ValueError:
+                print("Invalid date format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM")
+                return
+    except ValueError:
+        print("Invalid token. Must be a number.")
         return
 
     appt_data = {
@@ -69,7 +78,6 @@ def create_appointment():
     res = service.schedule_appointment(appt_data)
     print(res['message'])
 
-
 def validate_date(d):
     try:
         datetime.strptime(d, "%Y-%m-%d")
@@ -77,26 +85,73 @@ def validate_date(d):
     except:
         return False
 
+def update_patient():
+
+    print("Update Patient Details")
+    patient_id = input("Patient ID: ").strip()
+    
+    # Check if patient exists first
+    result = service.find_patient("id", patient_id)
+    if not result["success"]:
+        print(f"{result['message']}")
+        return
+    
+    print(f" Patient found: {result['patient']}")
+    
+    valid_fields = ['name', 'address', 'phone']
+    field = input_with_validation(
+        "Enter field to be updated (name, address, phone): ",
+        lambda x: x.lower() in valid_fields,
+        f"Invalid field. Must be one of: {', '.join(valid_fields)}"
+    ).lower()
+    
+
+    new_value = input(f"Enter new value for {field}: ").strip()
+    
+    if not new_value:
+        print("New value cannot be empty.")
+        return
+    
+    update_result = service.update_patient_details(patient_id, field, new_value)
+    print(f"{'SUCCESS!' if update_result['success'] else 'FAILURE'} {update_result['message']}")
+
 def recep_menu():
     while True:
-        print("==== Receptionist Menu ====")
+        print("\n" + "=" * 40)
+        print("RECEPTIONIST MENU".center(40))
+        print("=" * 40)
         print("1) Add Patient")
         print("2) List Patients")
-        print("3) Create Appointment")
-        print("4) List Appointments")
-        print("5) Exit")
-        choice = input("Choose option: ")
+        print("3) Update Patient")
+        print("4) Create Appointment")
+        print("5) List Appointments")
+        print("6) Exit")
+        print("=" * 40)
+        
+        choice = input("Choose option (1-6): ").strip()
 
-        if choice == '1':
-            add_patient()
-        elif choice == '2':
-            ReceptionistService().get_all_patients()
-        elif choice == '3':
-            create_appointment()
-        elif choice == '4':
-            ReceptionistService().get_all_appointments()
-        elif choice == '5':
-            print("Goodbye!")
-            break
-        else:
-            print("Invalid choice.")
+        try:
+            if choice == '1':
+                add_patient()
+            elif choice == '2':
+                service.get_all_patients()  
+            elif choice == '3':
+                update_patient()
+            elif choice == '4':
+                create_appointment()
+            elif choice == '5':
+                service.get_all_appointments() 
+            elif choice == '6':
+                print("Goodbye!")
+                break
+            else:
+                print("Invalid choice. Please enter a number 1-6.")
+        except Exception as e:
+            print(f" An error occurred: {e}")
+            print("Please try again.")
+        
+        # Pause before showing menu again
+        input("\nPress Enter to continue...")
+
+if __name__ == "__main__":
+    recep_menu()
