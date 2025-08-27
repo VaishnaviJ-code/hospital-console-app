@@ -3,6 +3,7 @@ from dao.StaffDaoImple import StaffDaoImple
 from datetime import datetime
 from models.staff import Staff
 from services.DoctorCreateLib import DocLib
+from utils.staff_validators import StaffValidator
 
 class StaffLib:
 

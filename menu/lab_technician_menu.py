@@ -10,11 +10,11 @@ def lab_technician_menu():
         print("1. Add New Lab Test")
         print("2. Display All Lab Tests")
         print("3. Search Lab Test")
-        print("4. Update Test Price")
-        print("5. Update Test Status")
-        print("6. View Pending Test Results")
-        print("7. Record Test Result")
-        print("8. Generate Test Report")
+        print("4. Update Test Info")
+        print("5. Delete Test")
+        print("6. Generate Test Bill")
+        print("7. View Pending Tests")
+        print("8. Record Test Result")
         print("9. Exit")
         print("=" * 50)
         
@@ -31,13 +31,13 @@ def lab_technician_menu():
                 search_test()
                 
             elif choice == '4':
-                update_test_price()
+                LabTechnicianLib.update_test()
                 
             elif choice == '5':
-                update_test_status()
+                LabTechnicianLib.delete_test()
                 
             elif choice == '6':
-                view_pending_tests()
+                LabTechnicianLib.generate_test_bill()
                 
             elif choice == '7':
                 record_test_result()
@@ -50,10 +50,10 @@ def lab_technician_menu():
                 break
                 
             else:
-                print("❌ Invalid choice! Please enter a number between 1-9.")
+                print("Invalid choice! Please enter a number between 1-9.")
                 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"Error: {e}")
             print("Please try again.")
         
         # Pause before showing menu again
@@ -70,7 +70,7 @@ def search_test():
         # Note: You'll need to implement search functionality in LabTechnicianLib
         print("Search functionality - to be implemented in LabTechnicianLib")
     else:
-        print("❌ Please enter a search term.")
+        print("Please enter a search term.")
 
 
 def update_test_price():
@@ -91,11 +91,11 @@ def update_test_price():
                 # Note: You'll need to implement update functionality in LabTechnicianLib
                 print("Update functionality - to be implemented in LabTechnicianLib")
             else:
-                print("❌ Price cannot be negative.")
+                print("Price cannot be negative.")
         except ValueError:
-            print("❌ Invalid price format. Please enter a valid number.")
+            print("Invalid price format. Please enter a valid number.")
     else:
-        print("❌ Please enter a test ID.")
+        print("Please enter a test ID.")
 
 
 def update_test_status():
@@ -120,9 +120,9 @@ def update_test_status():
             # Note: You'll need to implement update functionality in LabTechnicianLib
             print("Update functionality - to be implemented in LabTechnicianLib")
         else:
-            print("❌ Invalid status. Please enter 'y' or 'n'.")
+            print("Invalid status. Please enter 'y' or 'n'.")
     else:
-        print("❌ Please enter a test ID.")
+        print("Please enter a test ID.")
 
 
 def view_pending_tests():
@@ -153,9 +153,9 @@ def record_test_result():
             # Note: You'll need to implement this functionality
             print("Record result functionality - to be implemented")
         else:
-            print("❌ Test result cannot be empty.")
+            print("Test result cannot be empty.")
     else:
-        print("❌ Please enter both prescription ID and test ID.")
+        print("Please enter both prescription ID and test ID.")
 
 
 def generate_test_report():
@@ -175,7 +175,7 @@ def generate_test_report():
         # Note: You'll need to implement report generation
         print("Report generation functionality - to be implemented")
     else:
-        print("❌ Invalid report choice.")
+        print("Invalid report choice.")
 
 
 if __name__ == "__main__":
