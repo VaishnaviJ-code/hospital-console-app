@@ -1,0 +1,7 @@
+mysql-connector-python
+# or if using pymysql instead
+# pymysql
+
+PyMySQL==1.0.2
+cryptography>=3.4.8
+configparser
