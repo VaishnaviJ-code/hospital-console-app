@@ -60,3 +60,72 @@ class DoctorManagementLib:
             print("Invalid input! Doctor ID must be a number!")
         except Exception as e:
             print("Error viewing today's appointments:", e)
+
+    @staticmethod
+    def consult_patient():
+        print("\n--- Consult a Patient ---")
+        try:
+            appointment_id = input("Enter appointment ID: ").strip()
+            patient_id = input("Enter patient ID: ").strip()
+            doctor_id = input("Enter your doctor ID: ").strip()
+            diagnosis = input("Enter diagnosis: ").strip()
+            treatment = input("Enter treatment notes: ").strip()
+            medical_recordscol = input("Enter medical records file path or notes (optional): ").strip()
+
+            if not all([appointment_id, patient_id, doctor_id, diagnosis, treatment]):
+                print("Error: All fields except medical records are required.")
+                return
+
+            DoctorManagementLib.dao_service.add_consultation(
+                appointment_id,
+                patient_id,
+                doctor_id,
+                diagnosis,
+                treatment,
+                medical_recordscol
+            )
+
+            print("Consultation successfully recorded.")
+
+        except Exception as e:
+            print(f"Error during consultation: {e}")
+    
+    @staticmethod
+    def add_prescription_full():
+        print("\n--- Add Prescription ---")
+        record_id = input("Enter consultation record ID: ").strip()
+        doctor_id = input("Enter your doctor ID: ").strip()
+        patient_id = input("Enter patient ID: ").strip()
+
+        prescription_id = DoctorManagementLib.dao_service.add_prescription(
+            record_id,
+            doctor_id,
+            patient_id
+        )
+        if not prescription_id:
+            print("Failed to add prescription.")
+            return
+
+        # Add medicines
+        while True:
+            add_med = input("Add medicine? (y/n): ").strip().lower()
+            if add_med != 'y':
+                break
+            medicine_id = input("Enter medicine ID: ").strip()
+            dosage = input("Enter dosage: ").strip()
+            duration = input("Enter duration: ").strip()
+            DoctorManagementLib.dao_service.add_prescription_medicine(
+                prescription_id, medicine_id, dosage, duration
+            )
+
+        # Add tests
+        while True:
+            add_test = input("Add test? (y/n): ").strip().lower()
+            if add_test != 'y':
+                break
+            test_id = input("Enter test ID: ").strip()
+            DoctorManagementLib.dao_service.add_prescription_test(
+                prescription_id, patient_id, doctor_id, test_id
+            )
+
+        print("Prescription with medicines and tests saved successfully.")
