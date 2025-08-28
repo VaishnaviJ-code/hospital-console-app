@@ -122,7 +122,8 @@ class StaffLib:
             print(f"password : {staff.get_passwrd}")
         
         if staff.get_role_id==2:
-            DocLib.create_doctor_profile_auto(staff.get_staff_id)
+            sid=StaffLib.dao_services.last_id()
+            DocLib.create_doctor_profile_auto(sid)
 
     @staticmethod
     def update_staff_name():
