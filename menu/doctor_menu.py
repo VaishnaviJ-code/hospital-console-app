@@ -1,7 +1,6 @@
 from services.DoctorManagementLib import DoctorManagementLib
 
-def doctor_menu(doctor_id):
-    print(f"Doctor ID: {doctor_id} logged in")
+def doctor_menu():
     while True:
         print("\n" + "=" * 32)
         print("     Doctor Management System     ")
@@ -15,13 +14,13 @@ def doctor_menu(doctor_id):
         choice = input("Enter your choice (1-4): ").strip()
 
         if choice == '1':
-            DoctorManagementLib.view_appointments(doctor_id)
+            DoctorManagementLib.view_appointments()
         elif choice == '2':
-            DoctorManagementLib.get_todays_appointments(doctor_id)
+            DoctorManagementLib.get_todays_appointments()
         elif choice == '3':
-            DoctorManagementLib.consult_patient(doctor_id)
+            DoctorManagementLib.consult_patient()
         elif choice == '4':
-            DoctorManagementLib.add_prescription_full(doctor_id)
+            DoctorManagementLib.add_prescription_full()
         elif choice == '5':
             print("Exiting Doctor Management System. Goodbye!")
             break

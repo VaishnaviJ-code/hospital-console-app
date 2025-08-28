@@ -13,8 +13,9 @@ class DoctorManagementLib:
     #     return new_id
 
     @staticmethod
-    def view_appointments(doctor_id):
+    def view_appointments():
         try:
+            doctor_id = input("Enter Doctor ID to view appointments : ")
             appointmets = DoctorManagementLib.dao_service.view_appointments(doctor_id)
             if appointmets:
                 print(f"-"*47)
@@ -33,8 +34,9 @@ class DoctorManagementLib:
             print("Error viewing appointments : ",e)
 
     @staticmethod
-    def get_todays_appointments(doctor_id):
+    def get_todays_appointments():
         try:
+            doctor_id = input("Enter Doctor ID to view today's appointments: ")
             appointments = DoctorManagementLib.dao_service.view_appointments(doctor_id)
             today = datetime.today().date()
 
@@ -60,11 +62,12 @@ class DoctorManagementLib:
             print("Error viewing today's appointments:", e)
 
     @staticmethod
-    def consult_patient(doctor_id):
+    def consult_patient():
         print("\n--- Consult a Patient ---")
         try:
             appointment_id = input("Enter appointment ID: ").strip()
             patient_id = input("Enter patient ID: ").strip()
+            doctor_id = input("Enter your doctor ID: ").strip()
             diagnosis = input("Enter diagnosis: ").strip()
             treatment = input("Enter treatment notes: ").strip()
             medical_recordscol = input("Enter medical records file path or notes (optional): ").strip()
@@ -88,9 +91,10 @@ class DoctorManagementLib:
             print(f"Error during consultation: {e}")
     
     @staticmethod
-    def add_prescription_full(doctor_id):
+    def add_prescription_full():
         print("\n--- Add Prescription ---")
         record_id = input("Enter consultation record ID: ").strip()
+        doctor_id = input("Enter your doctor ID: ").strip()
         patient_id = input("Enter patient ID: ").strip()
 
         prescription_id = DoctorManagementLib.dao_service.add_prescription(
