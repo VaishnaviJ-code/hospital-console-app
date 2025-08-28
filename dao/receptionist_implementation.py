@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from datetime import datetime
+from datetime import date, datetime
 
 import pymysql
 
@@ -105,6 +105,7 @@ class ReceptionistDaoImplementation(ReceptionistBase):
             return aptid if cursor.rowcount == 1 else -1
         except Exception as e:
             print("Error booking appointment:", e)
+            self.conn.rollback()
             return -1
         finally:
             if cursor:
@@ -242,4 +243,74 @@ class ReceptionistDaoImplementation(ReceptionistBase):
         finally:
             if cursor:
                 cursor.close()
+
+    def get_daily_appointment_count_from_db(self, doctor_id: str, appointment_date: str) -> int:
+        """Get appointment count for doctor on specific date from database"""
+        cursor = None
+        try:
+            self.conn.ping(reconnect=True)
+            
+            cursor = self.conn.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("""
+                SELECT COUNT(*) as appointment_count
+                FROM appointments 
+                WHERE doctor_id = %s 
+                AND DATE(appointment_date) = %s
+                AND status NOT IN ('Cancelled', 'No-show')
+            """, (doctor_id, appointment_date))
+            
+            result = cursor.fetchone()
+            return result['appointment_count'] if result else 0
+        except Exception as e:
+            print(f"Error getting appointment count from DB: {e}")
+            return 0
+        finally:
+            if cursor:
+                cursor.close()
+
+    def update_all_doctors_availability(self):
+        """Update availability for all doctors based on today's appointments"""
+        cursor = None
+        try:
+            cursor = self.conn.cursor(pymysql.cursors.DictCursor)
+            today = date.today().strftime('%Y-%m-%d')
+            
+            # Get all active doctors
+            cursor.execute("""
+                SELECT d.doctor_id 
+                FROM doctors d
+                JOIN staff_tb s ON d.staff_id = s.staff_id
+                WHERE s.is_active = 'y'
+            """)
+            doctors = cursor.fetchall()
+            
+            for doctor in doctors:
+                doctor_id = doctor['doctor_id']
+                appointment_count = self.get_daily_appointment_count_from_db(doctor_id, today)
+                
+                # Update availability status (if you have an availability column)
+                # Or just use this information in your booking logic
+                print(f"Doctor {doctor_id}: {appointment_count}/25 appointments today")
+                
+        except Exception as e:
+            print(f"Error updating doctors availability: {e}")
+        finally:
+            if cursor:
+                cursor.close()
+
+    def get_doctor_availability_status(self, doctor_id: str, appointment_date: str) -> dict:
+        """Get comprehensive availability status for a doctor on a specific date"""
+        current_count = self.get_daily_appointment_count_from_db(doctor_id, appointment_date)
+        max_appointments = 25
+        
+        return {
+            'doctor_id': doctor_id,
+            'date': appointment_date,
+            'current_appointments': current_count,
+            'max_appointments': max_appointments,
+            'available_slots': max_appointments - current_count,
+            'is_available': current_count < max_appointments,
+            'availability_percentage': round((current_count / max_appointments) * 100, 1)
+        }
+
 

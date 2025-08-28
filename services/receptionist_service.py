@@ -3,10 +3,13 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
+
+import pymysql
 from dao.abstract_receptionist import ReceptionistBase
 from dao.receptionist_implementation import ReceptionistDaoImplementation
 from models.patient import Patient
 from models.appointment import Appointments
+from services.appointment_scheduler import appointment_scheduler
 from utils.patient_validators import PatientValidator
 from utils.appointment_validators import AppointmentValidator
 
@@ -339,32 +342,44 @@ class ReceptionistService:
                 "errors": ["Patient not found"]
             }
         
+        doctor_id = appointment_data["doctor_id"]
+        appointment_date = appointment_data["appointment_date"]
+        
+        # Check if appointment is for today and doctor is fully booked
+        if isinstance(appointment_date, datetime) and appointment_date.date() == date.today():
+            if not appointment_scheduler.can_book_appointment(doctor_id, appointment_date):
+                current_count = appointment_scheduler.get_appointment_count(doctor_id)
+                return {
+                    "success": False,
+                    "message": f"Doctor {doctor_id} is fully booked for today! ({current_count}/25 appointments)",
+                    "appointment_id": None,
+                    "errors": ["Doctor fully booked"]
+                }
+
         # Generate token if not provided
         if "token" not in appointment_data or not appointment_data["token"]:
             appointment_data["token"] = self._generate_token()
-        
-        # Set default status if not provided
+
         if "status" not in appointment_data:
             appointment_data["status"] = "Scheduled"
-        
-        # Set appointment date to now if not provided
-        if "appointment_date" not in appointment_data or not appointment_data["appointment_date"]:
-            appointment_data["appointment_date"] = datetime.now()
-        
+
         # Schedule the appointment
         try:
             appointment_id = self.receptionist_dao.book_appointment(appointment_data)
-            if appointment_id and appointment_id != -1 and isinstance(appointment_id, str) and appointment_id.startswith("APT"):
-                
+            
+            if appointment_id and appointment_id != -1:
+                # Update appointment count
+                if isinstance(appointment_date, datetime) and appointment_date.date() == date.today():
+                    appointment_scheduler.book_appointment(doctor_id, appointment_date)
+                    current_count = appointment_scheduler.get_appointment_count(doctor_id)
+                    print(f"Dr. {doctor_id} now has {current_count}/25 appointments for today")
                 appointment_details = self.receptionist_dao.get_appointment_with_fee(appointment_id)
-                
-                if appointment_details:
-                    # Display appointment confirmation with fee
-                    self._display_appointment_confirmation(appointment_details)
-                
+            if appointment_details:
+                self._display_appointment_confirmation(appointment_details)
+            
                 return {
                     "success": True,
-                    "message": "Appointment scheduled successfully",
+                    "message": "Appointment scheduled successfully!",
                     "appointment_id": appointment_id,
                     "token": appointment_data["token"],
                     "errors": []
@@ -374,17 +389,17 @@ class ReceptionistService:
                     "success": False,
                     "message": "Failed to schedule appointment. Database error occurred.",
                     "appointment_id": None,
-                    "token": None,
                     "errors": ["Database insertion failed"]
                 }
+
         except Exception as e:
             return {
                 "success": False,
                 "message": f"Error scheduling appointment: {str(e)}",
                 "appointment_id": None,
-                "token": None,
                 "errors": [str(e)]
             }
+        
     
     def find_appointment(self, appointment_id: str) -> Dict[str, Any]:
         """
@@ -457,9 +472,7 @@ class ReceptionistService:
                         date_str = str(appt_date)[:16] if appt_date else "N/A"
                     
                     # Get consultation fee (if available from joined query)
-                    fee = "N/A"
-                    if hasattr(appointment, 'consultation_fee'):
-                        fee = f"₹{appointment.consultation_fee:.2f}"
+                    fee = self._get_consultation_fee(appointment.get_doctor_id())
                     
                     print(f"{appointment.get_appointment_id():<12} {appointment.get_patient_id():<12} {appointment.get_doctor_id():<12} {appointment.get_token():<8} {appointment.get_status():<12} {date_str:<20} {fee:<10}")
                 
@@ -626,14 +639,13 @@ class ReceptionistService:
             }
     
     # ---------------- UTILITY METHODS ----------------
-    
+    id_ini = 1
+    @staticmethod
     def _generate_token(self) -> int:
         """Generate a unique token number for appointments."""
-        import random
-        # Generate token between 100-999
-        token = random.randint(100, 999)
-        # In production, you might want to check for uniqueness within the day
-        return token
+        Appointments.id_ini+=1
+        id=Appointments.id_ini
+        return id
     
     def get_patient_summary(self, patient_id: str) -> Dict[str, Any]:
         """
@@ -658,6 +670,21 @@ class ReceptionistService:
             "appointment_count": appointments_result["count"],
             "errors": []
         }
+    
+    def _get_consultation_fee(self, doctor_id: str) -> str:
+        """Get consultation fee for a doctor or return default"""
+        try:
+            cursor = self.receptionist_dao.conn.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("SELECT consultation_fee FROM doctors WHERE doctor_id = %s", (doctor_id,))
+            result = cursor.fetchone()
+            cursor.close()
+            
+            if result and result['consultation_fee']:
+                return f"₹{result['consultation_fee']:.2f}"
+            else:
+                return "No Doctor"
+        except Exception as e:
+            return "Error"
     
     def _display_appointment_confirmation(self, appointment_details: Dict):
         """Display appointment confirmation with consultation fee"""

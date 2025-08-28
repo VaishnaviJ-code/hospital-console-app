@@ -9,6 +9,8 @@ from datetime import datetime
 import sys
 import os
 
+from services.appointment_scheduler import appointment_scheduler
+
 # Import menu modules
 try:
     from menu.admin_menu import admin_menu
@@ -176,6 +178,9 @@ def main():
     """Entry point of the application"""
     try:
         # Create and run the hospital management system
+        print("Initializing appointment scheduler...")
+        appointment_scheduler.reset_if_new_day()
+        appointment_scheduler.sync_with_database()
         hms = HospitalManagementSystem()
         hms.run()
     
