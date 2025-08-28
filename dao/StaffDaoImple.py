@@ -17,6 +17,7 @@ class StaffDaoImple(StaffDaoServices):
     UPDATE_STAFF_USERNAME="UPDATE staff_tb set username=%s where staff_id=%s"
     UPDATE_STAFF_PASSWRD="UPDATE staff_tb set pass_wrd=%s where staff_id=%s"
     SUSPEND_STAFF="UPDATE staff_tb set is_active='n' where staff_id=%s"
+    ENABLE_STAFF="UPDATE staff_tb set is_active='n' where staff_id=%s"
 
 
     def __init__(self):
@@ -24,7 +25,6 @@ class StaffDaoImple(StaffDaoServices):
 
     def add_staff(self,staff:Staff)->bool:
         cursor=None
-        # sid=StaffDaoImple.incre_id(self)
         try:
             sid=StaffDaoImple.incre_id(self)
             cursor = self.conn.cursor(pymysql.cursors.DictCursor)#create a cursor object
@@ -211,19 +211,14 @@ class StaffDaoImple(StaffDaoServices):
         finally:
             cursor.close()        
 
-    def get_last_inserted_staff_id(self):
-        """Get the staff_id of the last inserted staff member"""
-        cursor = None
+    def enable_staff(self,staff_id)->bool:
         try:
             cursor = self.conn.cursor(pymysql.cursors.DictCursor)
-            cursor.execute("SELECT staff_id FROM staff_tb ORDER BY staff_id DESC LIMIT 1")
-            result = cursor.fetchone()
-            if result:
-                return result['staff_id']
-            return None
+            cursor.execute(self.ENABLE_STAFF,(staff_id,))
+            self.conn.commit()
+            return cursor.rowcount==1
         except Exception as e:
-            print(f"Error getting last staff ID: {e}")
-            return None
+            print("Error in enabling staff: ",e)
+            return False
         finally:
-            if cursor:
-                cursor.close()
+            cursor.close()  

@@ -1,10 +1,7 @@
-"""
-Staff validation utilities
-"""
-
 import re
 from datetime import datetime, date
 from typing import Dict, Any
+from models.staff import Staff
 
 
 class StaffValidator:
@@ -17,7 +14,6 @@ class StaffValidator:
     def validate_staff_id(staff_id: str) -> Dict[str, Any]:
         """Validate staff ID format"""
         errors = []
-        
         if not staff_id:
             errors.append("Staff ID is required")
         elif not isinstance(staff_id, str):
@@ -35,8 +31,7 @@ class StaffValidator:
     @staticmethod
     def validate_staff_name(name: str) -> Dict[str, Any]:
         """Validate staff name"""
-        errors = []
-        
+        errors = []   
         if not name or not name.strip():
             errors.append("Staff name is required")
         elif len(name.strip()) < 2:
@@ -135,13 +130,24 @@ class StaffValidator:
     def validate_role_id(role_id: int) -> Dict[str, Any]:
         """Validate role ID"""
         errors = []
-        
         valid_roles = [1, 2, 3, 4, 5]  # Admin, Doctor, Pharmacist, Receptionist, Lab Tech
-        
         if not isinstance(role_id, int):
             errors.append("Role ID must be an integer")
         elif role_id not in valid_roles:
             errors.append(f"Role ID must be one of {valid_roles}")
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors
+        }
+    
+    @staticmethod
+    def validate_experience(age,exp:int)->Dict[str,Any]:
+        errors = []
+        if not exp:
+            errors.append("Experience must be entred")
+        elif int(exp)>(age-18):
+            print(age,age-18)
+            errors.append("Enter the correct experience")
         
         return {
             "valid": len(errors) == 0,
@@ -149,26 +155,34 @@ class StaffValidator:
         }
     
     @staticmethod
-    def validate_staff_data(staff_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate complete staff data"""
-        all_errors = []
-        
-        # Validate each field
-        validations = [
-            StaffValidator.validate_staff_name(staff_data.get('staff_name', '')),
-            StaffValidator.validate_email(staff_data.get('email', '')),
-            StaffValidator.validate_phone(staff_data.get('phone', '')),
-            StaffValidator.validate_date_of_birth(staff_data.get('dob', '')),
-            StaffValidator.validate_gender(staff_data.get('gender', '')),
-            StaffValidator.validate_role_id(staff_data.get('role_id', 0))
-        ]
-        
-        # Collect all errors
-        for validation in validations:
-            if not validation['valid']:
-                all_errors.extend(validation['errors'])
+    def validate_age(role:int,age:int)->Dict[str,Any]:
+        errors = []
+        if age<18:
+            errors.append("Age must be at least 18 to get employeed")
+        elif age<25 and role==2:
+            errors.append("Doctor must be atleast 25 years old")
+        return {
+            "valid": len(errors) == 0,
+            "errors": errors
+        }
+    
+    @staticmethod
+    def validate_doj(doj_str: str) -> Dict[str, Any]:
+        """Validate date of joining"""
+        errors = []
+        if not doj_str:
+            errors.append("Date of joining is required")
+            return {"valid": False, "errors": errors}
+        try:
+            # Parse date from dd/mm/yyyy format
+            doj = datetime.strptime(doj_str, "%d/%m/%Y").date()
+            # Check if date is not in the future
+            if doj > date.today():
+                errors.append("Date of joining cannot be in the future")
+        except ValueError:
+            errors.append("Invalid date format. Use DD/MM/YYYY")
         
         return {
-            "valid": len(all_errors) == 0,
-            "errors": all_errors
+            "valid": len(errors) == 0,
+            "errors": errors
         }

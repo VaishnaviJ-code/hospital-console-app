@@ -4,7 +4,7 @@ class Staff:
     id_ini=1000
     def __init__(self,staff_id=None,staff_name=None,DOB=None,age=None,email=None,phone=None,address=None,experience=None,
                  joining_date=None,role_id=None,username=None,pass_wrd=None,is_active=None,created_at=None,gender=None):
-        self.__staff_id=staff_id
+        self.__staff_id=None
         self.__staff_name=staff_name
         self.__DOB=DOB
         self.__age=Staff.age_calc(self)
@@ -14,8 +14,8 @@ class Staff:
         self.__experience=experience
         self.__joining_date=joining_date if joining_date else date.today()
         self.__role_id=role_id
-        self.__username=username
-        self.__pass_wrd=pass_wrd if pass_wrd else Staff.passwrd_gen(self)
+        self.__username=None
+        self.__pass_wrd=Staff.passwrd_gen(self)
         self.__is_active=is_active
         self.__created_at=date.today()
         self.__gender=gender
@@ -76,7 +76,6 @@ class Staff:
     def set_experience(self,exp):
         self.__experience=exp
     
-
     @property
     def get_date_joining(self):
         return self.__joining_date
@@ -127,12 +126,6 @@ class Staff:
         return f"id: {self.__staff_id}| age: {self.__age}| username: {self.__username} | passwrd: {self.__pass_wrd} |created on: {self.__created_at}"
 
     
-    # @staticmethod
-    # def staff_id_gen():
-    #     id=Staff.id_ini+1
-    #     id_fin="EMP"+str(id) 
-    #     return id_fin
-    
     def age_calc(self):
         dob=self.get_DOB
         td = date.today()
@@ -147,6 +140,3 @@ class Staff:
         if name:    
                 passwrd=name[:3]+"2025"
         return passwrd
-
-# emp=Staff("None","jothis",date(2003, 3, 21),"None","ksjothis@gmail.com","9446635761","hjsahsja",5,"10/12/2024",2,"None","None","y","None","M")
-# print(emp)
