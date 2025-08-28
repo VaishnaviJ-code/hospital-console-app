@@ -4,6 +4,7 @@ from models.Doctor import Doctor
 from typing import List
 import pymysql  # type: ignore
 from datetime import datetime
+import traceback
 
 class DoctorDaoImplementation(DoctorDaoService):
     'Implementation for abstract class'
@@ -51,14 +52,16 @@ class DoctorDaoImplementation(DoctorDaoService):
                 self.conn.commit()
                 print("Consultation added successfully.")
         except Exception as e:
-            print("Error adding consultation:", e)
+            print("Error adding consultation:", str(e))
+            traceback.print_exc()
+
 
     def generate_new_record_id(conn):
         with conn.cursor() as cursor:
             cursor.execute("SELECT record_id FROM medical_records ORDER BY record_id DESC LIMIT 1")
             result = cursor.fetchone()
             if result:
-                last_id = result[0]  # e.g. "REC1001"
+                last_id = result['record_id']  # e.g. "REC1001"
                 number = int(last_id[3:])  # extract numeric part
                 new_number = number + 1
                 new_id = f"REC{new_number}"
@@ -122,8 +125,8 @@ class DoctorDaoImplementation(DoctorDaoService):
             with self.conn.cursor() as cursor:
                 cursor.execute("SELECT prescription_id FROM prescriptions ORDER BY prescription_id DESC LIMIT 1")
                 result = cursor.fetchone()
-                if result and result[0]:
-                    last_id = result[0]  # e.g. "PRES1001"
+                if result and result['prescription_id']:
+                    last_id = result['prescription_id']  # e.g. "PRES1001"
                     number = int(last_id[4:])  # Extract number part after 'PRES'
                     new_number = number + 1
                     new_id = f"PRES{new_number}"

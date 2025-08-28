@@ -14,7 +14,7 @@ class Staff:
         self.__experience=experience
         self.__joining_date=joining_date if joining_date else date.today()
         self.__role_id=role_id
-        self.__username=None
+        self.__username=username
         self.__pass_wrd=Staff.passwrd_gen(self)
         self.__is_active=is_active
         self.__created_at=date.today()
