@@ -90,10 +90,6 @@ class DocLib:
     @staticmethod
     def add_staff():
         doc = Doctor()
-        
-        # Generate staff ID
-        # sid = f"EMP{Staff.id_ini + 1}"
-        # Staff.id_ini += 1
 
         did = input("Enter Doctor ID: ")  # Use the property setter
         doc.set_doc_id=did
