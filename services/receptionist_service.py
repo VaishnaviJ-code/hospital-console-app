@@ -31,6 +31,26 @@ class ReceptionistService:
         :param patient_data: Patient information dictionary
         :return: Result dictionary with success status and patient_id or error message
         """
+        if "dob" in patient_data and patient_data["dob"]:
+            dob_input = patient_data["dob"]
+            try:
+                # Try to parse as DD/MM/YYYY first
+                if "/" in dob_input:
+                    parsed_date = datetime.strptime(dob_input, "%d/%m/%Y")
+                    patient_data["dob"] = parsed_date.strftime("%Y-%m-%d")  # Convert to MySQL format
+                # If already in YYYY-MM-DD format, keep as is
+                elif "-" in dob_input:
+                    # Validate it's correct YYYY-MM-DD format
+                    datetime.strptime(dob_input, "%Y-%m-%d")
+                    # Keep as is
+            except ValueError:
+                return {
+                    "success": False,
+                    "message": "Invalid date format. Please use DD/MM/YYYY",
+                    "patient_id": None,
+                    "errors": ["Invalid date format"]
+                }
+        
         # Validate patient data using PatientValidator
         validation_result = PatientValidator.validate_patient_data(patient_data)
         if not validation_result["valid"]:
@@ -244,9 +264,29 @@ class ReceptionistService:
             
             # Display patients
             if patients:
-                print(f"\n=== Found {len(patients)} Patients ===")
+                print("\n" + "=" * 120)
+                print("ALL PATIENTS".center(120))
+                print("=" * 120)
+                print(f"{'ID':<10} {'Name':<20} {'DOB':<12} {'Gender':<8} {'Phone':<12} {'Address':<25} {'Email':<20} {'Registered':<12}")
+                print("-" * 120)
+                
                 for patient in patients:
-                    print(patient)
+                    # Format registration date
+                    reg_date = patient.get_registration_date()
+                    if isinstance(reg_date, datetime):
+                        reg_date_str = reg_date.strftime('%Y-%m-%d')
+                    else:
+                        reg_date_str = str(reg_date)[:10] if reg_date else "N/A"
+                    
+                    # Truncate long fields to fit columns
+                    name = patient.get_patient_name()[:19] if patient.get_patient_name() else "N/A"
+                    address = patient.get_address()[:24] if patient.get_address() else "N/A"
+                    email = patient.get_email()[:19] if patient.get_email() else "N/A"
+                    
+                    print(f"{patient.get_patient_id():<10} {name:<20} {patient.get_dob():<12} {patient.get_gender():<8} {patient.get_phone():<12} {address:<25} {email:<20} {reg_date_str:<12}")
+                
+                print("=" * 120)
+                print(f"Total Patients: {len(patients)}")
             else:
                 print("No patients found in the database.")
             
@@ -402,9 +442,29 @@ class ReceptionistService:
             
             # Display appointments
             if appointments:
-                print(f"\n=== Found {len(appointments)} Appointments ===")
+                print("\n" + "=" * 100)
+                print("ALL APPOINTMENTS".center(100))
+                print("=" * 100)
+                print(f"{'ID':<12} {'Patient ID':<12} {'Doctor ID':<12} {'Token':<8} {'Status':<12} {'Date & Time':<20} {'Fee':<10}")
+                print("-" * 100)
+                
                 for appointment in appointments:
-                    print(appointment)
+                    # Format appointment date
+                    appt_date = appointment.get_appointment_date()
+                    if isinstance(appt_date, datetime):
+                        date_str = appt_date.strftime('%Y-%m-%d %H:%M')
+                    else:
+                        date_str = str(appt_date)[:16] if appt_date else "N/A"
+                    
+                    # Get consultation fee (if available from joined query)
+                    fee = "N/A"
+                    if hasattr(appointment, 'consultation_fee'):
+                        fee = f"₹{appointment.consultation_fee:.2f}"
+                    
+                    print(f"{appointment.get_appointment_id():<12} {appointment.get_patient_id():<12} {appointment.get_doctor_id():<12} {appointment.get_token():<8} {appointment.get_status():<12} {date_str:<20} {fee:<10}")
+                
+                print("=" * 100)
+                print(f"Total Appointments: {len(appointments)}")
             else:
                 print("No appointments found in the database.")
             
@@ -415,6 +475,7 @@ class ReceptionistService:
                 "count": len(appointments),
                 "errors": []
             }
+            
         except Exception as e:
             print(f"Error retrieving appointments: {str(e)}")
             return {
