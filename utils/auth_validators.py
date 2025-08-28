@@ -122,12 +122,19 @@ class AuthValidator:
                 }
             
             # Authentication successful
-            return {
+            response = {
                 "success": True,
                 "message": "Authentication successful",
                 "user": user_found,
                 "errors": []
             }
+
+            # Special handling: if Doctor, extract doctor_id
+            if expected_role == "Doctor":
+                response["doctor_id"] = user_found.get_doc_id  # <-- Ensure this works
+
+            return response
+
             
         except Exception as e:
             return {
