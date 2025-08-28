@@ -1,10 +1,12 @@
 from services.DoctorManagementLib import DoctorManagementLib
 
-def doctor_menu():
+def doctor_menu(doctor_id: str):
     while True:
         print("\n" + "=" * 32)
         print("     Doctor Management System     ")
         print("=" * 32)
+        if doctor_id:
+            print(f"WELCOME DOCTOR : {doctor_id}")
         print("1. View Appointments")
         print("2. View Today's Appointments")
         print("3. Consult a Patient")
@@ -14,13 +16,13 @@ def doctor_menu():
         choice = input("Enter your choice (1-4): ").strip()
 
         if choice == '1':
-            DoctorManagementLib.view_appointments()
+            DoctorManagementLib.view_appointments(doctor_id)
         elif choice == '2':
-            DoctorManagementLib.get_todays_appointments()
+            DoctorManagementLib.get_todays_appointments(doctor_id)
         elif choice == '3':
-            DoctorManagementLib.consult_patient()
+            DoctorManagementLib.consult_patient(doctor_id)
         elif choice == '4':
-            DoctorManagementLib.add_prescription_full()
+            DoctorManagementLib.add_prescription_full(doctor_id)
         elif choice == '5':
             print("Exiting Doctor Management System. Goodbye!")
             break

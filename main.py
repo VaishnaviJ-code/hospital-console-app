@@ -31,6 +31,8 @@ class HospitalManagementSystem:
         self.version = "1.0"
         self.current_user = None
         self.current_role = None
+        self.current_user_obj = None
+        self.current_doctor_id = None
     
     def display_header(self):
         """Display system header"""
@@ -79,6 +81,17 @@ class HospitalManagementSystem:
         if auth_result["success"]:
             self.current_user = username
             self.current_role = role
+            self.current_user_obj = auth_result.get("user")
+            # Resolve doctor id for doctor role
+            if role == "Doctor" and self.current_user_obj:
+                try:
+                    from services.DoctorManagementLib import DoctorManagementLib
+                    staff_id = getattr(self.current_user_obj, 'get_staff_id', None)
+                    if callable(staff_id):
+                        staff_id = self.current_user_obj.get_staff_id
+                    self.current_doctor_id = DoctorManagementLib.resolve_doctor_id_for_staff(staff_id)
+                except Exception as e:
+                    print(f"Warning: could not resolve doctor id: {e}")
             print(f"Login successful! Welcome, {username}")
             return True
         else:
@@ -109,12 +122,17 @@ class HospitalManagementSystem:
                     print("-" * 50)
                     
                     # Call the respective menu function
-                    menu_function()
+                    if role_name == "Doctor":
+                        menu_function(self.current_doctor_id)
+                    else:
+                        menu_function()
                     
                     # Logout message
                     print(f"\nGoodbye, {self.current_user}!")
                     self.current_user = None
                     self.current_role = None
+                    self.current_user_obj = None
+                    self.current_doctor_id = None
                     
                 except Exception as e:
                     print(f"Error accessing {role_name} menu: {e}")

@@ -15,7 +15,7 @@ class Staff:
         self.__joining_date=joining_date if joining_date else date.today()
         self.__role_id=role_id
         self.__username=username
-        self.__pass_wrd=pass_wrd if pass_wrd else Staff.passwrd_gen(self)
+        self.__pass_wrd=Staff.passwrd_gen(self)
         self.__is_active=is_active
         self.__created_at=date.today()
         self.__gender=gender
@@ -77,6 +77,13 @@ class Staff:
         self.__experience=exp
     
     @property
+    def get_staff_id(self):
+        return self.__staff_id
+    @get_staff_id.setter
+    def set_staff_id(self,id):
+        self.__staff_id=id
+
+    @property
     def get_date_joining(self):
         return self.__joining_date
     @get_date_joining.setter
@@ -126,6 +133,12 @@ class Staff:
         return f"id: {self.__staff_id}| age: {self.__age}| username: {self.__username} | passwrd: {self.__pass_wrd} |created on: {self.__created_at}"
 
     
+    # @staticmethod
+    # def staff_id_gen():
+    #     id=Staff.id_ini+1
+    #     id_fin="EMP"+str(id) 
+    #     return id_fin
+    
     def age_calc(self):
         dob=self.get_DOB
         td = date.today()
@@ -140,3 +153,6 @@ class Staff:
         if name:    
                 passwrd=name[:3]+"2025"
         return passwrd
+
+# emp=Staff("None","jothis",date(2003, 3, 21),"None","ksjothis@gmail.com","9446635761","hjsahsja",5,"10/12/2024",2,"None","None","y","None","M")
+# print(emp)

@@ -2,6 +2,7 @@ from dao.AbstractDoctorDao import DoctorDaoService
 from dao.DoctorDaoImple import DoctorDaoImplementation
 from datetime import datetime
 from models.Doctor import Doctor
+from dao.DoctorCreateDaoImple import DoctorCreateDaoImple
 
 class DoctorManagementLib:
     'Handles CRUD logic'
@@ -13,12 +14,25 @@ class DoctorManagementLib:
     #     return new_id
 
     @staticmethod
-    def view_appointments():
+    def resolve_doctor_id_for_staff(staff_id: str) -> str:
+        """Return the doctor_id mapped to a given staff_id, or empty string if not found."""
         try:
-            doctor_id = input("Enter Doctor ID to view appointments : ")
+            dao = DoctorCreateDaoImple()
+            doctors = dao.display_all_doctors()
+            for doc in doctors:
+                if str(doc.get_staff_id) == str(staff_id):
+                    return str(doc.get_doc_id)
+        except Exception as e:
+            print("Error resolving doctor id:", e)
+        return ""
+
+    @staticmethod
+    def view_appointments(doctor_id: str):
+        try:
             appointmets = DoctorManagementLib.dao_service.view_appointments(doctor_id)
             if appointmets:
                 print(f"-"*47)
+                print(f"|WELCOME DOCTOR : {doctor_id}")
                 print(f"|Appointments for Doctor ID : {doctor_id}     ")
                 for app in appointmets:
                     print(f"-"*47)
@@ -34,9 +48,8 @@ class DoctorManagementLib:
             print("Error viewing appointments : ",e)
 
     @staticmethod
-    def get_todays_appointments():
+    def get_todays_appointments(doctor_id: str):
         try:
-            doctor_id = input("Enter Doctor ID to view today's appointments: ")
             appointments = DoctorManagementLib.dao_service.view_appointments(doctor_id)
             today = datetime.today().date()
 
@@ -47,6 +60,7 @@ class DoctorManagementLib:
 
             if todays_appointments:
                 print(f"-"*47)
+                print(f"|WELCOME DOCTOR : {doctor_id}")
                 print(f"|Today's Appointments for Doctor ID : {doctor_id} ")
                 for app in todays_appointments:
                     print(f"-"*47)
@@ -62,12 +76,11 @@ class DoctorManagementLib:
             print("Error viewing today's appointments:", e)
 
     @staticmethod
-    def consult_patient():
+    def consult_patient(doctor_id: str):
         print("\n--- Consult a Patient ---")
         try:
             appointment_id = input("Enter appointment ID: ").strip()
             patient_id = input("Enter patient ID: ").strip()
-            doctor_id = input("Enter your doctor ID: ").strip()
             diagnosis = input("Enter diagnosis: ").strip()
             treatment = input("Enter treatment notes: ").strip()
             medical_recordscol = input("Enter medical records file path or notes (optional): ").strip()
@@ -91,10 +104,9 @@ class DoctorManagementLib:
             print(f"Error during consultation: {e}")
     
     @staticmethod
-    def add_prescription_full():
+    def add_prescription_full(doctor_id: str):
         print("\n--- Add Prescription ---")
         record_id = input("Enter consultation record ID: ").strip()
-        doctor_id = input("Enter your doctor ID: ").strip()
         patient_id = input("Enter patient ID: ").strip()
 
         prescription_id = DoctorManagementLib.dao_service.add_prescription(
