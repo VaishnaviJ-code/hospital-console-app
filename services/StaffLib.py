@@ -24,7 +24,7 @@ class StaffLib:
         staff.set_DOB=conv_m_date
         email=input("Enter the email: ")
         staff.set_email=email
-        phn=input("Enter the phn number: ")
+        phn=input("Enter the phone number: ")
         staff.set_phone=phn
         addr=input("Enter the address: ")
         staff.set_address=addr
@@ -34,7 +34,7 @@ class StaffLib:
         until_date=datetime.strptime(doj,"%d/%m/%Y")
         conv_m_date=until_date.date()
         staff.set_date_joining=conv_m_date
-        rid=int(input("Enter the id of the roloe: "))
+        rid=int(input("Enter the id of the role: "))
         staff.set_role_id=rid
         staff.set_is_active="y"
         sex=input("Enter the gender(M/F/Other): ")
@@ -47,6 +47,27 @@ class StaffLib:
             print("Inserted Successfully....")
             print(f"username : {staff.get_username} ")
             print(f"password : {staff.get_passwrd}")
+
+        if staff.get_role_id == 2:  # Doctor role
+            print("\n=== DOCTOR PROFILE CREATION ===")
+            print("Creating doctor profile for this staff member...")
+            
+            # Import and call doctor creation
+            from services.DoctorCreateLib import DocLib
+            
+            # Get the newly created staff_id (you'll need to modify this)
+            new_staff_id = StaffLib.dao_services.get_last_inserted_staff_id()  # You need to implement this
+            
+            # Call doctor profile creation
+            success = DocLib.create_doctor_profile_auto(new_staff_id)
+            
+            if success:
+                print("Doctor profile created successfully!")
+            else:
+                print("Failed to create doctor profile")
+        
+        else:
+            print("Failed to insert staff")
 
     @staticmethod
     def update_staff_name():

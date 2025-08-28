@@ -210,3 +210,20 @@ class StaffDaoImple(StaffDaoServices):
             return False
         finally:
             cursor.close()        
+
+    def get_last_inserted_staff_id(self):
+        """Get the staff_id of the last inserted staff member"""
+        cursor = None
+        try:
+            cursor = self.conn.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("SELECT staff_id FROM staff_tb ORDER BY staff_id DESC LIMIT 1")
+            result = cursor.fetchone()
+            if result:
+                return result['staff_id']
+            return None
+        except Exception as e:
+            print(f"Error getting last staff ID: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()

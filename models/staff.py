@@ -4,7 +4,7 @@ class Staff:
     id_ini=1000
     def __init__(self,staff_id=None,staff_name=None,DOB=None,age=None,email=None,phone=None,address=None,experience=None,
                  joining_date=None,role_id=None,username=None,pass_wrd=None,is_active=None,created_at=None,gender=None):
-        self.__staff_id=None
+        self.__staff_id=staff_id
         self.__staff_name=staff_name
         self.__DOB=DOB
         self.__age=Staff.age_calc(self)
@@ -15,7 +15,7 @@ class Staff:
         self.__joining_date=joining_date if joining_date else date.today()
         self.__role_id=role_id
         self.__username=username
-        self.__pass_wrd=Staff.passwrd_gen(self)
+        self.__pass_wrd=pass_wrd if pass_wrd else Staff.passwrd_gen(self)
         self.__is_active=is_active
         self.__created_at=date.today()
         self.__gender=gender
@@ -76,12 +76,6 @@ class Staff:
     def set_experience(self,exp):
         self.__experience=exp
     
-    @property
-    def get_staff_id(self):
-        return self.__staff_id
-    @get_staff_id.setter
-    def set_staff_id(self,id):
-        self.__staff_id=id
 
     @property
     def get_date_joining(self):

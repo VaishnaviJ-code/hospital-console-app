@@ -111,3 +111,86 @@ class DocLib:
         doc.set_consultation_fee = consult_fee
 
 
+    @staticmethod
+    def create_doctor_profile_auto(staff_id):
+        """Auto-create doctor profile for existing staff member"""
+        try:
+            print("Available Departments:")
+            print("1. Cardiology")
+            print("2. Neurology") 
+            print("3. Pediatrics")
+            print("4. Psychiatry")
+            print("5. General medicine")
+            print("6. Orthopedics")
+            print("7. Dentistry")
+            print("8. ENT")
+            print("9. Surgery")
+            
+            dept_id = int(input("Enter department ID (1-9): "))
+            
+            print("\nAvailable Specializations:")
+            print("1. Cardiologist")
+            print("2. Anesthesiology")
+            print("3. General Surgery")
+            print("4. Orthopedics")
+            print("5. Pediatrics")
+            print("6. Pathology")
+            print("7. Radiology")
+            print("8. Family medicine")
+            print("9. Neurologist")
+            print("10. Psychiatrist")
+            
+            sp_id = int(input("Enter specialization ID (1-10): "))
+            consultation_fee = float(input("Enter consultation fee: ₹"))
+            
+            # Generate doctor ID
+            doctor_id = DocLib.generate_doctor_id()
+            
+            # Create Doctor object
+            doc = Doctor(
+                doctor_id=doctor_id,
+                staff_id=staff_id,
+                dept_id=dept_id,
+                sp_id=sp_id,
+                consultation_fee=consultation_fee
+            )
+            
+            # Add doctor to database
+            if DocLib.dao_services.add_doctor(doc):
+                print(f"Doctor profile created with ID: {doctor_id}")
+                return True
+            else:
+                print("Failed to create doctor profile in database")
+                return False
+                
+        except ValueError as e:
+            print(f"Invalid input: {e}")
+            return False
+        except Exception as e:
+            print(f"Error creating doctor profile: {e}")
+            return False
+
+    @staticmethod
+    def generate_doctor_id():
+        """Generate next doctor ID"""
+        # Get existing doctor IDs and increment
+        try:
+            doctors = DocLib.dao_services.display_all_doctors()
+            if not doctors:
+                return "DOC1000"
+            
+            # Extract numeric parts and find max
+            max_num = 0
+            for doctor in doctors:
+                doc_id = doctor.get_doc_id
+                if doc_id and doc_id.startswith("DOC"):
+                    try:
+                        num = int(doc_id[3:])
+                        max_num = max(max_num, num)
+                    except ValueError:
+                        continue
+            
+            return f"DOC{max_num + 1:04d}"
+        except Exception as e:
+            print(f"Error generating doctor ID: {e}")
+            return "DOC1000"

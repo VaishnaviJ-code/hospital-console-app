@@ -15,8 +15,8 @@ class AuthValidator:
         1: "Administrator",
         2: "Doctor", 
         3: "Lab Technician",
-        4: "Receptionist",
-        5: "Pharmacist"
+        4: "Pharmacist",
+        5: "Receptionist"
     }
 
     DB_ROLE_MAPPING = {
