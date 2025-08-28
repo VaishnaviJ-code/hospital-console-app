@@ -62,3 +62,8 @@ class StaffDaoServices(ABC):
     def enable_staff(self,staff_id)->bool:
         '''enable active status of the staff'''
         pass
+
+    @abstractmethod
+    def last_id(self):
+        '''last staff id generated'''
+        pass

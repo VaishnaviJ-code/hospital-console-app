@@ -87,6 +87,13 @@ class StaffDaoImple(StaffDaoServices):
     
         return ids
 
+    def last_id(self):
+        ids = self.all_id()
+        if not ids:
+            return "EMP1000"
+        numeric_ids = [int(i[3:]) for i in ids if i.startswith("EMP")]
+        max_id = max(numeric_ids)
+        return f"EMP{max_id:04d}"
     
     def incre_id(self):
         ids = self.all_id()

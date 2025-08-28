@@ -51,7 +51,7 @@ def admin_menu():
                 StaffLib.suspend_staff()
             case 5:
                 StaffLib.enable_staff()
-            case 7:
+            case 6:
                 break
             case _:
                 print("invalid option")
