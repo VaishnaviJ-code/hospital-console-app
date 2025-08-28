@@ -57,3 +57,8 @@ class StaffDaoServices(ABC):
     def suspend_staff(self,staff_id)->bool:
         '''update active status of the staff'''
         pass
+
+    @abstractmethod
+    def enable_staff(self,staff_id)->bool:
+        '''enable active status of the staff'''
+        pass
