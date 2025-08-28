@@ -130,7 +130,7 @@ class StaffValidator:
     def validate_role_id(role_id: int) -> Dict[str, Any]:
         """Validate role ID"""
         errors = []
-        valid_roles = [1, 2, 3, 4, 5]  # Admin, Doctor, Pharmacist, Receptionist, Lab Tech
+        valid_roles = [2, 3, 4, 5]  # Doctor, Pharmacist, Receptionist, Lab Tech
         if not isinstance(role_id, int):
             errors.append("Role ID must be an integer")
         elif role_id not in valid_roles:

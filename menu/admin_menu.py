@@ -1,7 +1,7 @@
 from database.connection import DBConnection
 from services.StaffLib import StaffLib
 
-def main():
+def admin_menu():
     while True:
         c=int(input("------------------WWELCOME BACK ADMINISTRATOR----------------------------"
         "\n 1.ADD STAFF"
@@ -57,6 +57,3 @@ def main():
                 print("invalid option")
                 
 
-
-if __name__ == "__main__":
-    main()
