@@ -68,17 +68,19 @@ class HospitalManagementSystem:
             return False
     
     def authenticate_user(self, role):
-        """Database-backed authentication with role verification"""
         print(f"\n--- {role.upper()} LOGIN ---")
         username = input("Username: ").strip()
         password = input("Password: ").strip()
 
-        # Use validation utility
         auth_result = AuthValidator.authenticate_user(username, password, role)
-        
+
         if auth_result["success"]:
             self.current_user = username
             self.current_role = role
+
+            if role == "Doctor":
+                self.current_doctor_id = auth_result.get("doctor_id")  # 👈 store doctor ID
+
             print(f"Login successful! Welcome, {username}")
             return True
         else:
@@ -109,7 +111,11 @@ class HospitalManagementSystem:
                     print("-" * 50)
                     
                     # Call the respective menu function
-                    menu_function()
+                    if role_name == "Doctor":
+                        menu_function(self.current_doctor_id)
+                    else:
+                        menu_function()
+
                     
                     # Logout message
                     print(f"\nGoodbye, {self.current_user}!")
