@@ -1,5 +1,5 @@
 from services.DoctorManagementLib import DoctorManagementLib
-
+from services.StaffLib import StaffLib
 def doctor_menu(doctor_id: str):
     while True:
         print("\n" + "=" * 32)
@@ -11,7 +11,9 @@ def doctor_menu(doctor_id: str):
         print("2. View Today's Appointments")
         print("3. Consult a Patient")
         print("4. Add Prescription")
-        print("5. Exit")
+        print("5. Change username")
+        print("6. Change password")
+        print("7. Exit")
         
         choice = input("Enter your choice (1-4): ").strip()
 
@@ -24,6 +26,10 @@ def doctor_menu(doctor_id: str):
         elif choice == '4':
             DoctorManagementLib.add_prescription_full(doctor_id)
         elif choice == '5':
+            StaffLib.update_staff_username()
+        elif choice == '6':
+            StaffLib.update_staff_passwrd()
+        elif choice == '7':
             print("Exiting Doctor Management System. Goodbye!")
             break
         else:
