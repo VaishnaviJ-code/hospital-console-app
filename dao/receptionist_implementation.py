@@ -207,7 +207,6 @@ class ReceptionistDaoImplementation(ReceptionistBase):
                 cursor.close()
         return ids
 
-    
     def incre_apt_id(self):
         ids = self.appointment_id()
         if not ids:
@@ -313,4 +312,93 @@ class ReceptionistDaoImplementation(ReceptionistBase):
             'availability_percentage': round((current_count / max_appointments) * 100, 1)
         }
 
+    def save_consultation_bill(self, bill_data: Dict[str, Any]) -> bool:
+        """Save consultation bill to database"""
+        cursor = None
+        try:
+            cursor = self.conn.cursor()
+            
+            # Extract individual charges from bill items
+            consultation_fee = 0.0
+            op_charge = 0.0
+            registration_charge = 0.0
+            
+            for item in bill_data["items"]:
+                if item["description"] == "Consultation Fee":
+                    consultation_fee = item["amount"]
+                elif item["description"] == "OP Charge":
+                    op_charge = item["amount"]
+                elif item["description"] == "Registration Charge":
+                    registration_charge = item["amount"]
+            
+            # Insert bill into database
+            insert_bill_query = """
+                INSERT INTO consultation_bill (
+                    bill_id, patient_id, patient_name, doctor_id, doctor_name,
+                    appointment_id, consultation_fee, op_charge, registration_charge, 
+                    total_amount, bill_date
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            
+            params = (
+                bill_data["bill_id"],
+                bill_data["patient_id"],
+                bill_data.get("patient_name", ""),
+                bill_data["doctor_id"],
+                bill_data.get("doctor_name", ""),
+                bill_data.get("appointment_id", None),
+                consultation_fee,
+                op_charge,
+                registration_charge,
+                bill_data["total_amount"],
+                bill_data["date"]
+            )
+            
+            cursor.execute(insert_bill_query, params)
+            self.conn.commit()
+            
+            print(f"Bill saved to database: {bill_data['bill_id']}")
+            return True
+            
+        except Exception as e:
+            print(f"Error saving bill to database: {e}")
+            self.conn.rollback()
+            return False
+        finally:
+            if cursor:
+                cursor.close()
+
+    def get_consultation_bill(self, bill_id: str) -> Optional[Dict]:
+        """Retrieve consultation bill by ID"""
+        cursor = None
+        try:
+            cursor = self.conn.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("SELECT * FROM consultation_bill WHERE bill_id = %s", (bill_id,))
+            result = cursor.fetchone()
+            return result
+        except Exception as e:
+            print(f"Error retrieving bill: {e}")
+            return None
+        finally:
+            if cursor:
+                cursor.close()
+
+    def list_patient_bills(self, patient_id: str) -> List[Dict]:
+        """Get all bills for a specific patient"""
+        cursor = None
+        bills = []
+        try:
+            cursor = self.conn.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("""
+                SELECT * FROM consultation_bill 
+                WHERE patient_id = %s 
+                ORDER BY bill_date DESC
+            """, (patient_id,))
+            bills = cursor.fetchall()
+        except Exception as e:
+            print(f"Error retrieving patient bills: {e}")
+        finally:
+            if cursor:
+                cursor.close()
+        return bills
 

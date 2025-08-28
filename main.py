@@ -197,6 +197,10 @@ def main():
     try:
         # Create and run the hospital management system
         print("Initializing appointment scheduler...")
+        print("Initializing token management system...")
+        from services.token_manager import token_manager
+        token_manager.reset_if_new_day()
+        token_manager.sync_with_database()
         appointment_scheduler.reset_if_new_day()
         appointment_scheduler.sync_with_database()
         hms = HospitalManagementSystem()

@@ -114,6 +114,7 @@ def show_all_doctors_availability():
     """Show availability for all doctors today"""
     try:
         from dao.receptionist_implementation import ReceptionistDaoImplementation
+        from services.token_manager import token_manager
         dao = ReceptionistDaoImplementation()
         
         cursor = dao.conn.cursor(pymysql.cursors.DictCursor)
@@ -135,14 +136,16 @@ def show_all_doctors_availability():
             
             for doctor in doctors:
                 doctor_id = doctor['doctor_id']
-                status = appointment_scheduler.get_availability_status(doctor_id, today)
+
+                appointment_count = dao.get_daily_appointment_count_from_db(doctor_id, today)
+                is_available = appointment_count < 25
+                status_text = f"Available" if is_available else "Full (25/25)"
+                token_text = f"{appointment_count}/25"
                 
-                status_text = "Available" if status['is_available'] else "Full"
-                appt_text = f"{status['current_appointments']}/25"
-                
-                print(f"{doctor_id:<12} {doctor['staff_name']:<20} {appt_text:<15} {status_text:<15} ₹{doctor['consultation_fee']:.2f}")
+                print(f"{doctor_id:<12} {doctor['staff_name']:<20} {token_text:<12} {status_text:<15} ₹{doctor['consultation_fee']:.2f}")
             
-            print("=" * 80)
+            print("=" * 90)
+            print("Each doctor can see up to 25 patients per day (Token 1-25)")
         
     except Exception as e:
         print(f"Error showing availability: {e}")
@@ -154,6 +157,8 @@ def create_appointment():
     
     patient_id = input("Patient ID: ").strip()
     doctor_id = input("Doctor ID (from list above): ").strip()
+
+    token = None
     
     while True:
         date_str = input("Appointment Date & Time (DD/MM/YYYY HH:MM): ").strip()
@@ -188,29 +193,26 @@ def create_appointment():
             print("Example: 25/12/2025 14:30")
             continue
 
-    token = input("Token (number): ").strip()
+    # token = input("Token (number): ").strip()
     status = input("Status (default Scheduled): ").strip() or "Scheduled"
-
-    try:
-        token = int(token)
-    except ValueError:
-        print("Invalid token. Must be a number.")
-        return
 
     appt_data = {
         "patient_id": patient_id,
         "doctor_id": doctor_id,
-        "token": token,
+        # "token": token,
         "status": status,
         "appointment_date": appointment_datetime
     }
+    try: 
+        res = service.schedule_appointment(appt_data)
+        print(res['message'])
 
-    res = service.schedule_appointment(appt_data)
-    print(res['message'])
-
-    if res['success']:
-        print(f"\nUpdated availability:")
-        show_doctor_availability_detailed(doctor_id, appointment_datetime)
+        if res['success']:
+            print(f"\nUpdated availability:")
+            show_doctor_availability_detailed(doctor_id, appointment_datetime)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        print("Please try again.")
 
 
 def validate_date(d):
@@ -290,6 +292,29 @@ def show_available_doctors():
     except Exception as e:
         print(f"Error fetching doctors: {e}")
         return False
+def generate_patient_bill():
+    """Generate bill for a specific appointment"""
+    print("Generate Consultation Bill")
+    appointment_id = input("Enter Appointment ID: ").strip()
+    
+    # Find appointment
+    appointment_result = service.find_appointment(appointment_id)
+    if not appointment_result["success"]:
+        print(appointment_result["message"])
+        return
+    
+    appointment = appointment_result["appointment"]
+    
+    # Generate bill
+    bill_result = service._generate_consultation_bill({
+        "patient_id": appointment.get_patient_id(),
+        "doctor_id": appointment.get_doctor_id()
+    }, appointment_id)
+    
+    if bill_result["success"]:
+        print(bill_result["bill_display"])
+    else:
+        print(f"Error: {bill_result['message']}")
 
 def recep_menu():
     while True:
@@ -301,7 +326,8 @@ def recep_menu():
         print("3) Update Patient")
         print("4) Create Appointment")
         print("5) List Appointments")
-        print("6) Exit")
+        print("6) Generate Bill")
+        print("7) Exit")
         print("=" * 40)
         
         choice = input("Choose option (1-6): ").strip()
@@ -318,6 +344,8 @@ def recep_menu():
             elif choice == '5':
                 service.get_all_appointments() 
             elif choice == '6':
+                generate_patient_bill()
+            elif choice == '7':
                 print("Goodbye!")
                 break
             else:
