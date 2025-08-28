@@ -38,8 +38,6 @@ class StaffLib:
             e=StaffValidator.validate_role_id(rid)
             if e["valid"]==True:
                 staff.set_role_id=rid
-                if rid==2:
-                    DocLib.create_doctor_profile(staff.set_staff_id)
                 break
             else:
                 print(e["errors"])
@@ -122,6 +120,9 @@ class StaffLib:
             print("Inserted Successfully....")
             print(f"username : {staff.get_username} ")
             print(f"password : {staff.get_passwrd}")
+        
+        if staff.get_role_id==2:
+            DocLib.create_doctor_profile_auto(staff.get_staff_id)
 
     @staticmethod
     def update_staff_name():
