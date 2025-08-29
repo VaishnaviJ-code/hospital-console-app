@@ -34,6 +34,8 @@ class StaffValidator:
         errors = []   
         if not name or not name.strip():
             errors.append("Staff name is required")
+        elif not name.isalpha:
+            errors.append("Staff ID must be a string")
         elif len(name.strip()) < 2:
             errors.append("Staff name must be at least 2 characters")
         elif len(name.strip()) > 50:
