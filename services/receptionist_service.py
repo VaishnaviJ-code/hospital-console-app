@@ -3,10 +3,13 @@
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
+
+import pymysql
 from dao.abstract_receptionist import ReceptionistBase
 from dao.receptionist_implementation import ReceptionistDaoImplementation
 from models.patient import Patient
 from models.appointment import Appointments
+from services.appointment_scheduler import appointment_scheduler
 from utils.patient_validators import PatientValidator
 from utils.appointment_validators import AppointmentValidator
 
@@ -31,6 +34,26 @@ class ReceptionistService:
         :param patient_data: Patient information dictionary
         :return: Result dictionary with success status and patient_id or error message
         """
+        if "dob" in patient_data and patient_data["dob"]:
+            dob_input = patient_data["dob"]
+            try:
+                # Try to parse as DD/MM/YYYY first
+                if "/" in dob_input:
+                    parsed_date = datetime.strptime(dob_input, "%d/%m/%Y")
+                    patient_data["dob"] = parsed_date.strftime("%Y-%m-%d")  # Convert to MySQL format
+                # If already in YYYY-MM-DD format, keep as is
+                elif "-" in dob_input:
+                    # Validate it's correct YYYY-MM-DD format
+                    datetime.strptime(dob_input, "%Y-%m-%d")
+                    # Keep as is
+            except ValueError:
+                return {
+                    "success": False,
+                    "message": "Invalid date format. Please use DD/MM/YYYY",
+                    "patient_id": None,
+                    "errors": ["Invalid date format"]
+                }
+        
         # Validate patient data using PatientValidator
         validation_result = PatientValidator.validate_patient_data(patient_data)
         if not validation_result["valid"]:
@@ -244,9 +267,29 @@ class ReceptionistService:
             
             # Display patients
             if patients:
-                print(f"\n=== Found {len(patients)} Patients ===")
+                print("\n" + "=" * 120)
+                print("ALL PATIENTS".center(120))
+                print("=" * 120)
+                print(f"{'ID':<10} {'Name':<20} {'DOB':<12} {'Gender':<8} {'Phone':<12} {'Address':<25} {'Email':<20} {'Registered':<12}")
+                print("-" * 120)
+                
                 for patient in patients:
-                    print(patient)
+                    # Format registration date
+                    reg_date = patient.get_registration_date()
+                    if isinstance(reg_date, datetime):
+                        reg_date_str = reg_date.strftime('%Y-%m-%d')
+                    else:
+                        reg_date_str = str(reg_date)[:10] if reg_date else "N/A"
+                    
+                    # Truncate long fields to fit columns
+                    name = patient.get_patient_name()[:19] if patient.get_patient_name() else "N/A"
+                    address = patient.get_address()[:24] if patient.get_address() else "N/A"
+                    email = patient.get_email()[:19] if patient.get_email() else "N/A"
+                    
+                    print(f"{patient.get_patient_id():<10} {name:<20} {patient.get_dob()}   {patient.get_gender():<8} {patient.get_phone():<12} {address:<25} {email:<20} {reg_date_str:<12}")
+                
+                print("=" * 120)
+                print(f"Total Patients: {len(patients)}")
             else:
                 print("No patients found in the database.")
             
@@ -277,6 +320,10 @@ class ReceptionistService:
         :param appointment_data: Appointment details
         :return: Result dictionary with success status and appointment_id
         """
+        # ✅ Initialize variables to avoid UnboundLocalError
+        token = None
+        appointment_id = None
+        
         # Validate appointment data using AppointmentValidator
         validation_result = AppointmentValidator.validate_appointment_data(appointment_data)
         if not validation_result["valid"]:
@@ -299,34 +346,53 @@ class ReceptionistService:
                 "errors": ["Patient not found"]
             }
         
-        # Generate token if not provided
-        if "token" not in appointment_data or not appointment_data["token"]:
-            appointment_data["token"] = self._generate_token()
+        doctor_id = appointment_data["doctor_id"]
+        appointment_date = appointment_data["appointment_date"]
+
+        # ✅ Generate token automatically (1-25 per doctor per day)
+        from services.token_manager import token_manager
         
-        # Set default status if not provided
+        token = token_manager.get_next_available_token(doctor_id, appointment_date)
+        
+        if token == -1:
+            date_str = appointment_date.strftime('%d/%m/%Y') if isinstance(appointment_date, datetime) else str(appointment_date)
+            return {
+                "success": False,
+                "message": f"❌ Doctor {doctor_id} is fully booked for {date_str}! (25/25 tokens assigned)",
+                "appointment_id": None,
+                "token": None,
+                "errors": ["Doctor fully booked"]
+            }
+        
+        # ✅ Assign the token to appointment
+        appointment_data["token"] = token
+        
+        # Set default status
         if "status" not in appointment_data:
             appointment_data["status"] = "Scheduled"
-        
-        # Set appointment date to now if not provided
-        if "appointment_date" not in appointment_data or not appointment_data["appointment_date"]:
-            appointment_data["appointment_date"] = datetime.now()
-        
+
         # Schedule the appointment
         try:
             appointment_id = self.receptionist_dao.book_appointment(appointment_data)
-            if appointment_id and appointment_id != -1 and isinstance(appointment_id, str) and appointment_id.startswith("APT"):
+            
+            if appointment_id and appointment_id != -1:
+                # Generate consultation bill
+                bill_result = self._generate_consultation_bill(appointment_data, appointment_id)
                 
                 appointment_details = self.receptionist_dao.get_appointment_with_fee(appointment_id)
-                
                 if appointment_details:
-                    # Display appointment confirmation with fee
                     self._display_appointment_confirmation(appointment_details)
+                
+                # Display the bill if generated successfully
+                if bill_result['success']:
+                    print("\n" + bill_result['bill_display'])
                 
                 return {
                     "success": True,
-                    "message": "Appointment scheduled successfully",
+                    "message": f"✅ Appointment scheduled successfully! Token #{token} assigned to Dr. {doctor_id}",
                     "appointment_id": appointment_id,
-                    "token": appointment_data["token"],
+                    "token": token,
+                    "bill": bill_result.get('bill_data', None),
                     "errors": []
                 }
             else:
@@ -334,15 +400,16 @@ class ReceptionistService:
                     "success": False,
                     "message": "Failed to schedule appointment. Database error occurred.",
                     "appointment_id": None,
-                    "token": None,
+                    "token": token,
                     "errors": ["Database insertion failed"]
                 }
+
         except Exception as e:
             return {
                 "success": False,
                 "message": f"Error scheduling appointment: {str(e)}",
-                "appointment_id": None,
-                "token": None,
+                "appointment_id": appointment_id,
+                "token": token,
                 "errors": [str(e)]
             }
     
@@ -402,9 +469,27 @@ class ReceptionistService:
             
             # Display appointments
             if appointments:
-                print(f"\n=== Found {len(appointments)} Appointments ===")
+                print("\n" + "=" * 100)
+                print("ALL APPOINTMENTS".center(100))
+                print("=" * 100)
+                print(f"{'ID':<12} {'Patient ID':<12} {'Doctor ID':<12} {'Token':<8} {'Status':<12} {'Date & Time':<20} {'Fee':<10}")
+                print("-" * 100)
+                
                 for appointment in appointments:
-                    print(appointment)
+                    # Format appointment date
+                    appt_date = appointment.get_appointment_date()
+                    if isinstance(appt_date, datetime):
+                        date_str = appt_date.strftime('%Y-%m-%d %H:%M')
+                    else:
+                        date_str = str(appt_date)[:16] if appt_date else "N/A"
+                    
+                    # Get consultation fee (if available from joined query)
+                    fee = self._get_consultation_fee(appointment.get_doctor_id())
+                    
+                    print(f"{appointment.get_appointment_id():<12} {appointment.get_patient_id():<12} {appointment.get_doctor_id():<12} {appointment.get_token():<8} {appointment.get_status():<12} {date_str:<20} {fee:<10}")
+                
+                print("=" * 100)
+                print(f"Total Appointments: {len(appointments)}")
             else:
                 print("No appointments found in the database.")
             
@@ -415,6 +500,7 @@ class ReceptionistService:
                 "count": len(appointments),
                 "errors": []
             }
+            
         except Exception as e:
             print(f"Error retrieving appointments: {str(e)}")
             return {
@@ -565,14 +651,12 @@ class ReceptionistService:
             }
     
     # ---------------- UTILITY METHODS ----------------
-    
-    def _generate_token(self) -> int:
+    id_ini = 1
+    @staticmethod
+    def _generate_token() -> int:
         """Generate a unique token number for appointments."""
-        import random
-        # Generate token between 100-999
-        token = random.randint(100, 999)
-        # In production, you might want to check for uniqueness within the day
-        return token
+        Appointments.id_ini+=1
+        return Appointments.id_ini
     
     def get_patient_summary(self, patient_id: str) -> Dict[str, Any]:
         """
@@ -598,6 +682,21 @@ class ReceptionistService:
             "errors": []
         }
     
+    def _get_consultation_fee(self, doctor_id: str) -> str:
+        """Get consultation fee for a doctor or return default"""
+        try:
+            cursor = self.receptionist_dao.conn.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("SELECT consultation_fee FROM doctors WHERE doctor_id = %s", (doctor_id,))
+            result = cursor.fetchone()
+            cursor.close()
+            
+            if result and result['consultation_fee']:
+                return f"₹{result['consultation_fee']:.2f}"
+            else:
+                return "No Doctor"
+        except Exception as e:
+            return "Error"
+    
     def _display_appointment_confirmation(self, appointment_details: Dict):
         """Display appointment confirmation with consultation fee"""
         print("\n" + "=" * 50)
@@ -614,3 +713,166 @@ class ReceptionistService:
         print("Please make note of your token number and appointment ID.")
         print("=" * 50)
 
+    def _generate_consultation_bill(self, appointment_data: Dict[str, Any], appointment_id: str) -> Dict[str, Any]:
+        """Generate consultation bill for the appointment and save to database"""
+        try:
+            from services.bill_generator import bill_generator
+            
+            # Get patient details
+            patient = self.receptionist_dao.search_patient_by_id(appointment_data["patient_id"])
+            if not patient:
+                return {"success": False, "message": "Patient not found for billing"}
+            
+            # Check if patient registered today (newly registered)
+            patient_reg_date = patient.get_registration_date()
+            is_newly_registered = False
+            
+            if isinstance(patient_reg_date, datetime):
+                is_newly_registered = patient_reg_date.date() == date.today()
+            
+            # Get doctor details and consultation fee
+            doctor_id = appointment_data["doctor_id"]
+            doctor_fee = self._get_doctor_consultation_fee(doctor_id)
+            doctor_name = self._get_doctor_name(doctor_id)
+            
+            # Generate bill and save to database
+            bill_data = bill_generator.generate_consultation_bill(
+                patient_id=patient.get_patient_id(),
+                doctor_id=doctor_id,
+                consultation_fee=doctor_fee,
+                appointment_id=appointment_id,  
+                is_newly_registered=is_newly_registered,
+                patient_name=patient.get_patient_name(),
+                doctor_name=doctor_name,
+                save_to_db=True  # Save to database
+            )
+            
+            # Format for display
+            bill_display = bill_generator.display_bill(bill_data)
+            
+            return {
+                "success": True,
+                "bill_data": bill_data,
+                "bill_display": bill_display,
+                "saved_to_db": True
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error generating bill: {str(e)}"
+            }
+
+
+    def _get_doctor_consultation_fee(self, doctor_id: str) -> float:
+        """Get doctor's consultation fee"""
+        try:
+            cursor = self.receptionist_dao.conn.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("SELECT consultation_fee FROM doctors WHERE doctor_id = %s", (doctor_id,))
+            result = cursor.fetchone()
+            cursor.close()
+            
+            return float(result['consultation_fee']) if result and result['consultation_fee'] else 0.0
+        except Exception as e:
+            print(f"Error getting consultation fee: {e}")
+            return 0.0
+
+    def _get_doctor_name(self, doctor_id: str) -> str:
+        """Get doctor's name"""
+        try:
+            cursor = self.receptionist_dao.conn.cursor(pymysql.cursors.DictCursor)
+            cursor.execute("""
+                SELECT s.staff_name 
+                FROM doctors d 
+                JOIN staff_tb s ON d.staff_id = s.staff_id 
+                WHERE d.doctor_id = %s
+            """, (doctor_id,))
+            result = cursor.fetchone()
+            cursor.close()
+            
+            return result['staff_name'] if result else "Unknown Doctor"
+        except Exception as e:
+            print(f"Error getting doctor name: {e}")
+            return "Unknown Doctor"
+        
+    def get_patient_bills(self, patient_id: str) -> Dict[str, Any]:
+        """Get all bills for a specific patient"""
+        try:
+            bills = self.receptionist_dao.list_patient_bills(patient_id)
+            
+            if bills:
+                print(f"\nBills for Patient {patient_id}")
+                print("=" * 80)
+                print(f"{'Bill ID':<15} {'Date':<20} {'Doctor':<15} {'Amount':<12} {'Status':<10}")
+                print("-" * 80)
+                
+                for bill in bills:
+                    print(f"{bill['bill_id']:<15} {str(bill['bill_date'])[:19]:<20} {bill['doctor_id']:<15} ₹{bill['total_amount']:<11.2f} {'Paid' if bill.get('payment_status') else 'Pending'}")
+                
+                print("=" * 80)
+                print(f"Total Bills: {len(bills)}")
+            else:
+                print(f"No bills found for patient {patient_id}")
+            
+            return {
+                "success": True,
+                "bills": bills,
+                "count": len(bills)
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error retrieving bills: {str(e)}",
+                "bills": []
+            }
+
+    def get_bill_details(self, bill_id: str) -> Dict[str, Any]:
+        """Get detailed bill information"""
+        try:
+            bill = self.receptionist_dao.get_consultation_bill(bill_id)
+            
+            if bill:
+                # Format bill for display
+                from services.bill_generator import bill_generator
+                
+                # Convert database record back to bill format
+                bill_items = []
+                if bill['op_charge'] > 0:
+                    bill_items.append({"description": "OP Charge", "amount": bill['op_charge']})
+                if bill['consultation_fee'] > 0:
+                    bill_items.append({"description": "Consultation Fee", "amount": bill['consultation_fee']})
+                if bill['registration_charge'] > 0:
+                    bill_items.append({"description": "Registration Charge", "amount": bill['registration_charge']})
+                
+                formatted_bill = {
+                    "bill_id": bill['bill_id'],
+                    "date": str(bill['bill_date']),
+                    "patient_id": bill['patient_id'],
+                    "patient_name": bill['patient_name'],
+                    "doctor_id": bill['doctor_id'],
+                    "doctor_name": bill['doctor_name'],
+                    "items": bill_items,
+                    "total_amount": bill['total_amount'],
+                    "is_newly_registered": bill['registration_charge'] > 0
+                }
+                
+                bill_display = bill_generator.display_bill(formatted_bill)
+                print(bill_display)
+                
+                return {
+                    "success": True,
+                    "bill": bill,
+                    "formatted_display": bill_display
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"Bill {bill_id} not found"
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error retrieving bill: {str(e)}"
+            }

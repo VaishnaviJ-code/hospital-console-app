@@ -60,22 +60,33 @@ class PatientValidator:
             return {"valid": False, "errors": errors}
 
         try:
-            if isinstance(dob, str):
-                birth_date = datetime.strptime(dob, '%Y-%m-%d').date()
-            else:
-                birth_date = dob
+            birth_date = None
+        
+            for date_format in ['%d/%m/%Y', '%Y-%m-%d']:
+                try:
+                    if isinstance(dob, str):
+                        birth_date = datetime.strptime(dob, date_format).date()
+                        break
+                except ValueError:
+                    continue
+            
+            # If no format matched
+            if birth_date is None:
+                errors.append("Invalid date format. Use DD/MM/YYYY or YYYY-MM-DD")
+                return {"valid": False, "errors": errors}
 
+            # Existing validation logic
             if birth_date > date.today():
                 errors.append("Date of birth cannot be in the future")
 
             age = (date.today() - birth_date).days // 365
             if age > 150:
                 errors.append("Invalid date of birth (age cannot exceed 150 years)")
-        except ValueError:
-            errors.append("Invalid date format. Use YYYY-MM-DD")
+
+        except Exception as e:
+            errors.append(f"Invalid date: {str(e)}")
 
         return {"valid": len(errors) == 0, "errors": errors}
-
     @staticmethod
     def validate_gender(gender: str) -> Dict[str, Any]:
         """Validate gender."""
