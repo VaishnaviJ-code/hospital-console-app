@@ -286,7 +286,7 @@ class ReceptionistService:
                     address = patient.get_address()[:24] if patient.get_address() else "N/A"
                     email = patient.get_email()[:19] if patient.get_email() else "N/A"
                     
-                    print(f"{patient.get_patient_id():<10} {name:<20} {patient.get_dob():<12} {patient.get_gender():<8} {patient.get_phone():<12} {address:<25} {email:<20} {reg_date_str:<12}")
+                    print(f"{patient.get_patient_id():<10} {name:<20} {patient.get_dob()}   {patient.get_gender():<8} {patient.get_phone():<12} {address:<25} {email:<20} {reg_date_str:<12}")
                 
                 print("=" * 120)
                 print(f"Total Patients: {len(patients)}")
