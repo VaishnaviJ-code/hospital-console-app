@@ -157,7 +157,7 @@ class PharmacistImpl(PharmacistDAO):
             
             # Get medicines for this prescription
             query = """
-            SELECT m.med_id, m.name, m.price, pm.dosage, pm.duartion as duration
+            SELECT m.med_id, m.name, m.price, pm.dosage, pm.duration as duration
             FROM prescription_medicine pm
             JOIN medicines m ON pm.medicine_id = m.med_id
             WHERE pm.prescription_id = %s
