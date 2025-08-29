@@ -54,7 +54,7 @@ class StaffValidator:
         if not email:
             errors.append("Email is required")
         else:
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[gmail]+\.[com]{2,}$'
             if not re.match(email_pattern, email):
                 errors.append("Invalid email format")
         
