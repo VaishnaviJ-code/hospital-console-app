@@ -8,6 +8,7 @@ class PatientValidator:
     VALID_GENDERS = ['other', 'm', 'f', 'male', 'female', 'o', 'M', 'F', 'Other']
     PHONE_PATTERN = r'^\d{10}$'  # Simplified to 10 digits
     EMAIL_PATTERN = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    VALID_NAME = r'^[a-zA-Z .\-]+$'
 
     @staticmethod
     def validate_patient_data(patient_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -49,6 +50,8 @@ class PatientValidator:
             errors.append("Name must be at least 2 characters long")
         elif len(name.strip()) > 100:
             errors.append("Name cannot exceed 100 characters")
+        elif not re.match(PatientValidator.VALID_NAME, name):
+            errors.append("Name cannot contain integers or symbols")
         return {"valid": len(errors) == 0, "errors": errors}
 
     @staticmethod

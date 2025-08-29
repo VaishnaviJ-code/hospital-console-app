@@ -320,7 +320,7 @@ class ReceptionistService:
         :param appointment_data: Appointment details
         :return: Result dictionary with success status and appointment_id
         """
-        # ✅ Initialize variables to avoid UnboundLocalError
+        # Initialize variables to avoid UnboundLocalError
         token = None
         appointment_id = None
         
@@ -349,7 +349,7 @@ class ReceptionistService:
         doctor_id = appointment_data["doctor_id"]
         appointment_date = appointment_data["appointment_date"]
 
-        # ✅ Generate token automatically (1-25 per doctor per day)
+        # Generate token automatically (1-25 per doctor per day)
         from services.token_manager import token_manager
         
         token = token_manager.get_next_available_token(doctor_id, appointment_date)
@@ -358,13 +358,13 @@ class ReceptionistService:
             date_str = appointment_date.strftime('%d/%m/%Y') if isinstance(appointment_date, datetime) else str(appointment_date)
             return {
                 "success": False,
-                "message": f"❌ Doctor {doctor_id} is fully booked for {date_str}! (25/25 tokens assigned)",
+                "message": f"Doctor {doctor_id} is fully booked for {date_str}! (25/25 tokens assigned)",
                 "appointment_id": None,
                 "token": None,
                 "errors": ["Doctor fully booked"]
             }
         
-        # ✅ Assign the token to appointment
+        # Assign the token to appointment
         appointment_data["token"] = token
         
         # Set default status
@@ -389,7 +389,7 @@ class ReceptionistService:
                 
                 return {
                     "success": True,
-                    "message": f"✅ Appointment scheduled successfully! Token #{token} assigned to Dr. {doctor_id}",
+                    "message": f"Appointment scheduled successfully! Token #{token} assigned to Dr. {doctor_id}",
                     "appointment_id": appointment_id,
                     "token": token,
                     "bill": bill_result.get('bill_data', None),

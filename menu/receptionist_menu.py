@@ -4,6 +4,8 @@ from services.appointment_scheduler import appointment_scheduler
 from services.receptionist_service import ReceptionistService
 from datetime import date, datetime
 
+from utils.patient_validators import PatientValidator
+
 service = ReceptionistService()
 
 def patient_id_exists(patient_id):
@@ -28,7 +30,7 @@ def input_with_validation(prompt, validation_func, error_msg):
 
 def add_patient():
     print("Enter new patient details:")
-    name = input_with_validation("Name: ", lambda x: len(x) >= 2, "Name should be at least 2 characters.")
+    name = input_with_validation("Name: ", lambda x: len(x) >= 2 and PatientValidator.validate_name(x), "Name should be at least 2 characters.")
     dob = input_with_validation("DOB (DD/MM/YYYY): ", lambda x: validate_date_format(x), "Invalid date format. Use DD/MM/YYYY")
      # Convert to YYYY-MM-DD format for database storage
     try:

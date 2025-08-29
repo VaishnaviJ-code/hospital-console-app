@@ -9,6 +9,7 @@ from datetime import datetime
 import sys
 import os
 
+from services.DoctorManagementLib import DoctorManagementLib
 from services.appointment_scheduler import appointment_scheduler
 
 # Import menu modules
@@ -198,6 +199,8 @@ def main():
         # Create and run the hospital management system
         print("Initializing appointment scheduler...")
         print("Initializing token management system...")
+        from dao.DoctorDaoImple import DoctorDaoImplementation
+        DoctorManagementLib.dao_service = DoctorDaoImplementation()
         from services.token_manager import token_manager
         token_manager.reset_if_new_day()
         token_manager.sync_with_database()
