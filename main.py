@@ -1,6 +1,6 @@
 """
 Hospital Management System - Main Entry Point
-Author: Vinayak Chandran and Team
+Author: Vaishnavi J and Team
 Version: 1.0
 Description: Main file with role-based menu access for hospital management system
 """
