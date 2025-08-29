@@ -232,7 +232,7 @@ class TestDaoImplementation(TestDaoService):
             
             query = """
             SELECT lt.test_id, lt.test_name, lt.price, pt.status
-            FROM prescribtion_test pt
+            FROM prescription_test pt
             JOIN lab_test lt ON pt.test_id = lt.test_id
             WHERE pt.patient_id IN (
                 SELECT patient_id FROM prescriptions WHERE prescription_id = %s

@@ -217,7 +217,7 @@ class DoctorManagementLib:
                 
                 print("\nMedicines:")
                 for med in details['medicines']:
-                    print(f"- {med['name']} ({med['med_type']}) - {med['dosage']} for {med['duartion']}")
+                    print(f"- {med['name']} ({med['med_type']}) - {med['dosage']} for {med['duration']}")
                     
                 print("\nTests:")
                 for test in details['tests']:
