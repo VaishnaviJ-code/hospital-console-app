@@ -34,7 +34,7 @@ class StaffValidator:
         errors = []   
         if not name or not name.strip():
             errors.append("Staff name is required")
-        elif not name.isalpha:
+        elif not name.isalpha():
             errors.append("Staff ID must be a string")
         elif len(name.strip()) < 2:
             errors.append("Staff name must be at least 2 characters")
@@ -66,14 +66,15 @@ class StaffValidator:
     @staticmethod
     def validate_phone(phone: str) -> Dict[str, Any]:
         """Validate phone number"""
-        errors = []
-        
+        errors = []  
         if not phone:
             errors.append("Phone number is required")
         else:
             # Remove any formatting and check if it's 10 digits
             clean_phone = re.sub(r'[\s\-\(\)]', '', phone)
             if not re.match(r'^\d{10}$', clean_phone):
+                errors.append("Phone number must be exactly 10 digits")
+            elif not clean_phone.isdigit():
                 errors.append("Phone number must be exactly 10 digits")
         
         return {
@@ -145,10 +146,12 @@ class StaffValidator:
         }
     
     @staticmethod
-    def validate_experience(age,exp:int)->Dict[str,Any]:
+    def validate_experience(age,exp:str)->Dict[str,Any]:
         errors = []
         if not exp:
             errors.append("Experience must be entred")
+        elif not exp.isdigit():
+            errors.append("Experience must be an integer")
         elif int(exp)>(age-18):
             errors.append("Enter the correct experience")
         
