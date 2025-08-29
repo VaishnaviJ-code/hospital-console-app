@@ -91,7 +91,7 @@ class HospitalManagementSystem:
                     from services.DoctorManagementLib import DoctorManagementLib
                     staff_id = getattr(self.current_user_obj, 'get_staff_id', None)
                     if callable(staff_id):
-                        staff_id = self.current_user_obj.get_staff_id
+                        staff_id = self.current_user_obj.get_staff_id()
                     self.current_doctor_id = DoctorManagementLib.resolve_doctor_id_for_staff(staff_id)
                 except Exception as e:
                     print(f"Warning: could not resolve doctor id: {e}")
