@@ -129,11 +129,13 @@ class StaffValidator:
         }
     
     @staticmethod
-    def validate_role_id(role_id: int) -> Dict[str, Any]:
+    def validate_role_id(role_id: str) -> Dict[str, Any]:
         """Validate role ID"""
         errors = []
-        valid_roles = [2, 3, 4, 5]  # Doctor, Pharmacist, Receptionist, Lab Tech
-        if not isinstance(role_id, int):
+        valid_roles = ["2", "3", "4", "5"]  # Doctor, Pharmacist, Receptionist, Lab Tech
+        if not role_id:
+            errors.append("Role ID must be given")
+        elif not role_id.isdigit():
             errors.append("Role ID must be an integer")
         elif role_id not in valid_roles:
             errors.append(f"Role ID must be one of {valid_roles}")
@@ -148,7 +150,6 @@ class StaffValidator:
         if not exp:
             errors.append("Experience must be entred")
         elif int(exp)>(age-18):
-            print(age,age-18)
             errors.append("Enter the correct experience")
         
         return {
@@ -169,7 +170,7 @@ class StaffValidator:
         }
     
     @staticmethod
-    def validate_doj(doj_str: str) -> Dict[str, Any]:
+    def validate_doj(doj_str: str,exp:int) -> Dict[str, Any]:
         """Validate date of joining"""
         errors = []
         if not doj_str:
@@ -178,9 +179,13 @@ class StaffValidator:
         try:
             # Parse date from dd/mm/yyyy format
             doj = datetime.strptime(doj_str, "%d/%m/%Y").date()
+            td=date.today()
+            yrs=td.year-doj.year
             # Check if date is not in the future
             if doj > date.today():
                 errors.append("Date of joining cannot be in the future")
+            elif yrs>exp:
+                errors.append("Give the correct date of joining")
         except ValueError:
             errors.append("Invalid date format. Use DD/MM/YYYY")
         

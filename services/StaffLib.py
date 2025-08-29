@@ -29,17 +29,15 @@ class StaffLib:
                 print(e['errors'])
         #validate and add role id
         while True:
-            rid=int(input("Enter the id of the role" 
+            rid=input("Enter the id of the role" 
             "\n2.Doctor " 
             "\n3.Pharmacist " 
             "\n4.Receptionist" 
             "\n5.Lab Tech" \
-            "\nEnter your choice: "))
+            "\nEnter your choice: ")
             e=StaffValidator.validate_role_id(rid)
             if e["valid"]==True:
-                staff.set_role_id=rid
-                if rid==2:
-                    DocLib.create_doctor_profile(staff.set_staff_id)
+                staff.set_role_id=int(rid)
                 break
             else:
                 print(e["errors"])
@@ -97,7 +95,8 @@ class StaffLib:
         #validate and add doj
         while True:
             doj=input("Enter the date of joining (dd/mm/yyy): ")
-            e=StaffValidator.validate_doj(doj)
+            exp=staff.get_experience
+            e=StaffValidator.validate_doj(doj,exp)
             if e["valid"]==True:
                 until_date=datetime.strptime(doj,"%d/%m/%Y")
                 conv_m_date=until_date.date()
