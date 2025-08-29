@@ -1,7 +1,8 @@
 import pymysql
 from database.connection import DBConnection
+from services.appointment_scheduler import appointment_scheduler
 from services.receptionist_service import ReceptionistService
-from datetime import datetime
+from datetime import date, datetime
 
 service = ReceptionistService()
 
@@ -52,65 +53,27 @@ def add_patient():
     res = service.register_new_patient(patient_data)
     print(res['message'])
 
-def validate_date_format(date_str):
-    try:
-        datetime.strptime(date_str, "%d/%m/%Y")
-        return True
-    except ValueError:
-        return False
-
 def create_appointment():
     print("Create a new appointment:")
-    show_available_doctors()
-    
     patient_id = input("Patient ID: ").strip()
-    doctor_id = input("Doctor ID (from list above): ").strip()
+    doctor_id = input("Doctor ID: ").strip()  
     token = input("Token (number): ").strip()
     status = input("Status (default Scheduled): ").strip() or "Scheduled"
-    
-    
-    while True:
-        date_str = input("Appointment Date & Time (DD/MM/YYYY HH:MM): ").strip()
-        
-        try:
-            # Parse the input date/time
-            appointment_datetime = datetime.strptime(date_str, "%d/%m/%Y %H:%M")
-            
-            # Check if appointment is in the past
-            current_time = datetime.now()
-            if appointment_datetime <= current_time:
-                print("ERROR: Appointment date and time cannot be in the past!")
-                print(f"Current time: {current_time.strftime('%d/%m/%Y %H:%M')}")
-                print(f"You entered: {appointment_datetime.strftime('%d/%m/%Y %H:%M')}")
-                continue  # Ask for input again
-            
-            # Check if appointment is too far in future (optional)
-            days_ahead = (appointment_datetime.date() - current_time.date()).days
-            if days_ahead > 365:
-                print("ERROR: Appointment cannot be scheduled more than 1 year in advance!")
-                continue
-            
-            # Check working hours (9 AM to 6 PM)
-            appointment_hour = appointment_datetime.hour
-            if appointment_hour < 9 or appointment_hour >= 18:
-                print("ERROR: Appointments can only be scheduled between 9:00 AM and 6:00 PM!")
-                continue
-            
-            # Check weekends (optional)
-            if appointment_datetime.weekday() >= 5:  # Saturday=5, Sunday=6
-                print("ERROR: Appointments cannot be scheduled on weekends!")
-                continue
-            
-            # If all validations pass, break the loop
-            break
-            
-        except ValueError:
-            print("ERROR: Invalid date/time format! Please use DD/MM/YYYY HH:MM")
-            print("Example: 25/12/2025 14:30")
-            continue
+    date_str = input("Appointment Date (YYYY-MM-DD HH:MM): ").strip()
 
     try:
         token = int(token)
+        try:
+            appointment_date = datetime.strptime(date_str, "%Y-%m-%d %H:%M")
+        except ValueError:
+            # If time not provided, try date only and default to 09:00
+            try:
+                appointment_date = datetime.strptime(date_str, "%Y-%m-%d")
+                appointment_date = appointment_date.replace(hour=9, minute=0)  
+                print("Time not specified, defaulting to 09:00")
+            except ValueError:
+                print("Invalid date format. Use YYYY-MM-DD or YYYY-MM-DD HH:MM")
+                return
     except ValueError:
         print("Invalid token. Must be a number.")
         return
@@ -118,14 +81,12 @@ def create_appointment():
     appt_data = {
         "patient_id": patient_id,
         "doctor_id": doctor_id,
-        "token": token,
+        # "token": token,
         "status": status,
         "appointment_date": appointment_datetime
     }
-
     res = service.schedule_appointment(appt_data)
     print(res['message'])
-
 
 def validate_date(d):
     try:
@@ -164,43 +125,6 @@ def update_patient():
     update_result = service.update_patient_details(patient_id, field, new_value)
     print(f"{'SUCCESS!' if update_result['success'] else 'FAILURE'} {update_result['message']}")
 
-def show_available_doctors():
-    """Display available doctors for appointment booking"""
-    try:
-        conn = DBConnection().get_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        
-        query = """
-        SELECT d.doctor_id, s.staff_name, dept.dept_name, sp.specialization, d.consultation_fee
-        FROM doctors d
-        JOIN staff_tb s ON d.staff_id = s.staff_id
-        JOIN department dept ON d.dept_id = dept.dept_id
-        JOIN specialization sp ON d.sp_id = sp.sp_id
-        WHERE s.is_active = 'y'
-        """
-        
-        cursor.execute(query)
-        doctors = cursor.fetchall()
-        
-        if doctors:
-            print("\n" + "=" * 80)
-            print("AVAILABLE DOCTORS".center(80))
-            print("=" * 80)
-            print(f"{'Doctor ID':<12} {'Name':<20} {'Department':<15} {'Specialization':<15} {'Fee':<10}")
-            print("-" * 80)
-            
-            for doc in doctors:
-                print(f"{doc['doctor_id']:<12} {doc['staff_name']:<20} {doc['dept_name']:<15} {doc['specialization']:<15} ₹{doc['consultation_fee']:.2f}")
-            
-            print("=" * 80)
-        else:
-            print("No doctors available. Please add doctor profiles first.")
-            
-        cursor.close()
-        
-    except Exception as e:
-        print(f"Error fetching doctors: {e}")
-
 def recep_menu():
     while True:
         print("\n" + "=" * 40)
@@ -211,7 +135,8 @@ def recep_menu():
         print("3) Update Patient")
         print("4) Create Appointment")
         print("5) List Appointments")
-        print("6) Exit")
+        print("6) Generate Bill")
+        print("7) Exit")
         print("=" * 40)
         
         choice = input("Choose option (1-6): ").strip()
@@ -228,6 +153,8 @@ def recep_menu():
             elif choice == '5':
                 service.get_all_appointments() 
             elif choice == '6':
+                generate_patient_bill()
+            elif choice == '7':
                 print("Goodbye!")
                 break
             else:

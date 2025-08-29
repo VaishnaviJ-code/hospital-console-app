@@ -7,13 +7,16 @@ class Appointments:
     """
     # id_ini = 1000
     
-    def __init__(self, appointment_id: str, patient_id: str, doctor_id: str, token:int, status:str, appointment_date:datetime=None):
+    def __init__(self, appointment_id: str, patient_id: str, doctor_id: str, token:int, status:str, appointment_date:datetime=None, **kwargs):
         self.__appointment_id = appointment_id
         self.__patient_id = patient_id
         self.__doctor_id = doctor_id
         self.__token = token
         self.__status = status
         self.__appointment_date = appointment_date or datetime.now()
+
+        for key, value in kwargs.items():
+            setattr(self, f"__{key}", value)
 
     # Getters
 

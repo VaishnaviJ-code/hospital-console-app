@@ -1,6 +1,6 @@
 """
 Hospital Management System - Main Entry Point
-Author: Vinayak Chandran and Team
+Author: Vaishnavi J and Team
 Version: 1.0
 Description: Main file with role-based menu access for hospital management system
 """
@@ -8,6 +8,8 @@ Description: Main file with role-based menu access for hospital management syste
 from datetime import datetime
 import sys
 import os
+
+from services.appointment_scheduler import appointment_scheduler
 
 # Import menu modules
 try:
@@ -194,6 +196,13 @@ def main():
     """Entry point of the application"""
     try:
         # Create and run the hospital management system
+        print("Initializing appointment scheduler...")
+        print("Initializing token management system...")
+        from services.token_manager import token_manager
+        token_manager.reset_if_new_day()
+        token_manager.sync_with_database()
+        appointment_scheduler.reset_if_new_day()
+        appointment_scheduler.sync_with_database()
         hms = HospitalManagementSystem()
         hms.run()
     
